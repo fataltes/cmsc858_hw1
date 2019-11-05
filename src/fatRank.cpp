@@ -10,7 +10,6 @@
  * @param cvec
  */
 void FatRank::construct() {
-    uint32_t wrdCnt = 64;
     uint64_t n = cvec.size();
     std::cerr << "cvec size: " << n << "\n";
     s = static_cast<uint32_t>(std::pow(std::log2(n), 2) / 2);
@@ -39,34 +38,36 @@ void FatRank::construct() {
     Rb = new compact::vector<uint64_t>(bWidth, static_cast<uint64_t>(std::ceil(n/(double)b)));
     Rb->clear_mem();
     auto pWidth = static_cast<uint32_t >(std::ceil(std::log2(bWidth)));
-    Rp = new compact::vector<uint64_t>(pWidth, static_cast<uint64_t>(Rb->size() * b));
+    Rp = new compact::vector<uint64_t>(pWidth, static_cast<uint64_t>(std::pow(2, b) * b));
     Rp->clear_mem();
     std::cerr << "Rs.size(): " << Rs->size() << " Rb.size(): " << Rb->size() << " Rp.size(): " << Rp->size() << "\n";
 
-    uint32_t i{0}, bitCnt{0}, accumOneCnt{0}, superBlockOneCnt{0}, blockOneCnt{0}, isOne{0}, RsIdx{0}, RbIdx{0}, RpIdx{0};
-    while (i < n) {
-        bitCnt=wrdCnt;//std::min(wrdCnt, n-i);
-        auto wrd = cvec.get_int(i, bitCnt);
-        for ( int shiftVal = 0; shiftVal< bitCnt; shiftVal++) {
-            isOne = static_cast<uint32_t >((wrd >> shiftVal) & 1);
-            if (i % s == 0) {
-//                std::cerr << "Rs " << RsIdx << " " << accumOneCnt << "\n";
-                (*Rs)[RsIdx++] = accumOneCnt;
-                superBlockOneCnt = 0;
-            }
-            if (i % b == 0) {
-//                std::cerr << "Rb " << RbIdx << " " << superBlockOneCnt << "\n";
-                (*Rb)[RbIdx++] = superBlockOneCnt;
-                blockOneCnt = 0;
-            }
-//            std::cerr << shiftVal << " " << RpIdx << " " << blockOneCnt << "\n";
-            (*Rp)[RpIdx++] = blockOneCnt;
-            blockOneCnt += isOne;
-            superBlockOneCnt += isOne;
-            accumOneCnt += isOne;
-//            std::cerr << i << " " << shiftVal <<  "\n";
-            i++;
+    // Filling Rp
+    for (auto i = 0; i < Rp->size(); i++) {
+        uint32_t accumRank = 0;
+        for (auto j = 0; j < b; j++) {
+            accumRank += (i >> j) & 1;
+//            std::cerr << i << " " << j << " " << accumRank << "\n";
+            (*Rp)[i*b + j] = accumRank;
         }
+    }
+
+    // Filling Rs and Rb
+    uint32_t i{0}, bitCnt{0}, accumOneCnt{0}, superBlockOneCnt{0}, blockOneCnt{0}, endOfBlock{s}, RsIdx{0}, RbIdx{0};
+
+    while (i < n) {
+        if (i % s == 0) {
+            (*Rs)[RsIdx++] = accumOneCnt;
+            superBlockOneCnt = 0;
+            endOfBlock = RsIdx*s;
+        }
+        bitCnt=endOfBlock-i > 0 and endOfBlock-i < b? endOfBlock - i : b;
+        auto wrd = cvec.get_int(i, bitCnt);
+        blockOneCnt = __builtin_popcount(wrd);
+        (*Rb)[RbIdx++] = superBlockOneCnt;
+        superBlockOneCnt += blockOneCnt;
+        accumOneCnt += blockOneCnt;
+        i+=bitCnt;
     }
 }
 
@@ -76,8 +77,9 @@ uint64_t FatRank::rank1(uint64_t i) {
         std::cerr << "ERROR! Index requested is out of range. Index: " << i << " bitvector size: " << cvec.size() << "\n";
         std::exit(5);
     }
-    val = (*Rs)[i/s] + (*Rb)[i/s] + (*Rp)[i/p] + cvec[i];
-    std::cerr << i << ":rs=" << (*Rs)[i/s] << " rb=" << (*Rb)[i/s] << " rp=" << (*Rp)[i/p] << " v=" << cvec[i] << "\n";
+    auto pType = cvec.get_int((i/b)*b, b);
+    val = (*Rs)[i/s] + (*Rb)[i/b] + (*Rp)[pType*b+i%b];
+//    std::cerr << i << ":rs=" << (*Rs)[i/s] << " rb=" << (*Rb)[i/b] << " rp=" << (*Rp)[pType*b+i%b] << " pType=" << pType << "\n";
     return val;
 }
 
