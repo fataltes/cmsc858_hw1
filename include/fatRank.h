@@ -11,13 +11,23 @@
 
 class FatRank {
 public:
-    FatRank(uint64_t size) {
-        cvec.resize(size);
+    FatRank(compact::vector<uint64_t, 1> &cvecIn) : cvec(cvecIn) {
+        construct();
     }
+    uint64_t operator()(uint64_t i) {return rank1(i);}
+    uint64_t rank1(uint64_t i);
+    uint64_t rank0(uint64_t i);
+    uint64_t overhead();
 
-    void doIt(compact::vector<uint64_t, 1> &cvec);
 private:
-    compact::vector<uint64_t, 1> cvec;
+    uint32_t s = 0;
+    uint32_t b = 0;
+    uint32_t p = 0;
+    compact::vector<uint64_t, 1> &cvec;
+    compact::vector<uint64_t>* Rs;
+    compact::vector<uint64_t>* Rb;
+    compact::vector<uint64_t>* Rp;
+    void construct();
 };
 
 #endif //CMSC858_HW1_FATRANK_H

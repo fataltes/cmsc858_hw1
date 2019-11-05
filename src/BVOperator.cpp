@@ -68,11 +68,11 @@ int main(int argc, char* argv[])  {
 
     if(res) {
         switch(selected) {
-            case mode::rank: benchMarkRank(opts);  break;
+            case mode::rank: benchMarkRank(opts); std::cerr << "Done\n"; break;
             case mode::select: benchMarkSelect(opts);  break;
             case mode::wv: benchMarkWaveletTrees(opts); break;
             case mode::help: std::cout << make_man_page(cli, "bvOperate"); break;
         }
     }
-
+    return 0;//EXIT_SUCCESS;
 }
