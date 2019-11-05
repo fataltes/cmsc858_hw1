@@ -14,12 +14,17 @@ public:
     explicit Rank_support(compact::vector<uint64_t, 1> &cvecIn) : cvec(cvecIn) {
         construct();
     }
+
     uint64_t operator()(uint64_t i) {return rank1(i);}
     uint64_t rank1(uint64_t i);
     uint64_t rank0(uint64_t i);
     uint64_t overhead();
 
+    uint64_t getBvSize() const;
+    uint64_t getSetIdxLessEqual(uint64_t i);
+
 private:
+    uint64_t bvSize;
     uint32_t s = 0;
     uint32_t b = 0;
     uint32_t p = 0;
