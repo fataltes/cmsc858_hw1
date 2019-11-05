@@ -1,5 +1,5 @@
 add_library(bvOperators_core
-        fatRank.cpp)
+        rank_support.cpp)
 
 set(BVOPERATORS_DEBUG_CXXFLAGS "${BVOPERATORS_CXX_FLAGS};-g")
 set(BVOPERATORS_RELEASE_CXXFLAGS "${BVOPERATORS_CXX_FLAGS};-O3")

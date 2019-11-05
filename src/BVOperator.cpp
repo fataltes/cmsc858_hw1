@@ -8,7 +8,7 @@
 //#include "spdlog/fmt/ostr.h"
 //#include "spdlog/fmt/fmt.h"
 #include "opts.h"
-#include "fatRank.h"
+#include "rank_support.h"
 
 //#include "CLI/Timer.hpp"
 using namespace clipp;
