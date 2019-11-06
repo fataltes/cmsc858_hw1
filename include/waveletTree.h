@@ -12,10 +12,14 @@
 class WaveletTree {
 
 public:
-    WaveletTree(Opts &opts);
+    explicit WaveletTree(std::string &inputFile, bool loadIndex=false);
 
     bool initializingWVTree(std::string &fileName);
-    bool serialize();
+    bool serialize(std::string &prefix);
+
+    void access(uint64_t idx);
+    void rank(char c, uint64_t idx);
+    void select(char c, uint64_t idx);
 
 private:
     std::string indexPrefix;

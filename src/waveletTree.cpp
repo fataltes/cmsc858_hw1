@@ -10,11 +10,31 @@
 
 #include "waveletTree.h"
 
-WaveletTree::WaveletTree(Opts &opts) : indexPrefix(opts.prefix) {
-    initializingWVTree(opts.inputFile);
-    wv = new compact::vector<uint64_t, 1>(static_cast<uint64_t >(std::ceil(std::log2(chars.size()))*seqLen));
-    wv->clear_mem();
-    construct(opts.inputFile);
+WaveletTree::WaveletTree(std::string &inputFile, bool loadIndex) {
+    if (loadIndex) {
+        std::cout << "loading the index from " + inputFile + "..\n";
+        std::ifstream idxInfo(inputFile + "/" + BVOperators::idxInfoFileName,
+                              std::ios::binary | std::ios::in);
+        idxInfo.read(reinterpret_cast<char*>(&seqLen), sizeof(seqLen));
+        uint32_t charCnt{0};
+        idxInfo.read(reinterpret_cast<char*>(&charCnt), sizeof(charCnt));
+        for (uint32_t i = 0; i < charCnt; i++) {
+            char c;
+            idxInfo.read(&c, sizeof(c));
+            chars[c] = i;
+        }
+        charLen = static_cast<uint32_t >(std::ceil(std::log2(charCnt)));
+        idxInfo.close();
+        std::string fileName = inputFile + "/" + BVOperators::wvIdxFileName;
+        wv = new compact::vector<uint64_t, 1>(10);
+        wv->deserialize(fileName, false);
+    }
+    else {
+        initializingWVTree(inputFile);
+        wv = new compact::vector<uint64_t, 1>(static_cast<uint64_t >(std::ceil(std::log2(chars.size())) * seqLen));
+        wv->clear_mem();
+        construct(inputFile);
+    }
 }
 
 bool WaveletTree::initializingWVTree(std::string &fileName) {
@@ -121,8 +141,8 @@ void WaveletTree::insertIntoWVRecursively(uint64_t c, uint64_t level) {
     insertIntoWVRecursively(c, level+1);
 }
 
-bool WaveletTree::serialize() {
-    if (indexPrefix == "console") {
+bool WaveletTree::serialize(std::string &prefix) {
+    if (prefix == "console") {
         std::cout << "writing the wv to console\n";
         for (auto c = 0; c < charLen; c++) {
             for (auto i = 0; i < seqLen; i++) {
@@ -131,21 +151,32 @@ bool WaveletTree::serialize() {
             std::cout << "\n";
         }
     } else {
-        std::cout << "serializing the wavelet to " + indexPrefix + "/wv.bin\n";
-        std::ofstream wvIndx(indexPrefix + "/wv.bin", std::ios::binary | std::ios::out);
-        wvIndx.write(reinterpret_cast<char*>(&charLen), sizeof(charLen));
-        wvIndx.write(reinterpret_cast<char*>(&seqLen), sizeof(seqLen));
+        std::cout << "serializing the wavelet to " + prefix + "\n";
+        std::ofstream idxInfo(prefix + "/" + BVOperators::idxInfoFileName,
+                std::ios::binary | std::ios::out);
+        idxInfo.write(reinterpret_cast<char*>(&seqLen), sizeof(seqLen));
+        auto charCnt = static_cast<uint32_t >(chars.size());
+        idxInfo.write(reinterpret_cast<char*>(&charCnt), sizeof(charCnt));
         for (auto &kv : chars) {
-            wvIndx.write(&kv.first, sizeof(kv.first));
+            idxInfo.write(&kv.first, sizeof(kv.first));
         }
-        wv->serialize(wvIndx);
-        wvIndx.close();
+        idxInfo.close();
+        std::ofstream wvIdx(prefix + "/" + BVOperators::wvIdxFileName,
+                std::ios::binary | std::ios::out);
+        wv->serialize(wvIdx);
+        wvIdx.close();
     }
     return true;
 }
 
-int constructWaveletTree(Opts &opts) {
-    WaveletTree wv(opts);
-    wv.serialize();
-}
+void WaveletTree::access(uint64_t idx) {}
+void WaveletTree::rank(char c, uint64_t idx) {}
+void WaveletTree::select(char c, uint64_t idx) {}
 
+int constructWaveletTree(Opts &opts) {
+    WaveletTree wv(opts.inputFile);
+    wv.serialize(opts.prefix);
+    WaveletTree wv2(opts.prefix, true);
+    opts.prefix = "console";
+    wv2.serialize(opts.prefix);
+}

@@ -9,7 +9,7 @@
 
 class Select_support {
 public:
-    Select_support(Rank_support &rank_supportIn): r(rank_supportIn) {}
+    explicit Select_support(Rank_support &rank_supportIn): r(rank_supportIn) {}
     uint64_t operator()(uint64_t i) {return select1(i);}
     uint64_t select1(uint64_t i);
     uint64_t select0(uint64_t i);
