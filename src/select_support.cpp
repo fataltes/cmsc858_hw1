@@ -58,11 +58,6 @@ uint64_t Select_support::recursiveSelect0(uint64_t s, uint64_t e, uint64_t g) {
     }
 }
 
-
-uint64_t Select_support::select0(uint64_t i) {
-    return 0;
-}
-
 uint64_t Select_support::overhead() {
     return 0;
 }
