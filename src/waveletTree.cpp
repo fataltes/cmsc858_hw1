@@ -310,6 +310,8 @@ int operateOnWaveletTree(Opts &opts) {
                 auto res = wv.select(c, idx);
                 if (res >= 0) {
                     std::cout << idx << (idx % 10 == 1?"st ":(idx % 10 == 2)?"nd ":"th ") << c << " happens at index " << res << "\n";
+                } else {
+                    std::cout << "character " << c << " occurs < " << idx << " times\n";
                 }
             }
         }
