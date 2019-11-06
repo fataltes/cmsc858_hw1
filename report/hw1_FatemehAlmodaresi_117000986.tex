@@ -93,5 +93,53 @@
     There are 3 options available for report sub-command to set minimum, maximum, and jump size for different bit-vectors that rank is going to be tested on.
 
     \section{Task3}
+    In this section, I constructed the wavelet tree based on the serialized algorithm that was explained in the paper
+    ``Simple, Fast and Lightweight Parallel Wavelet Tree Construction'' and stored it in the Level-Wise Wavelet Tree data structure
+    which is a bit-vector containing all the bits required to store different levels of the tree.
+    What I store at the end is the wavelet tree bit-vector in binary format, count of unique characters, list of the characters in sorted order,
+    each of a size of byte and the original sequence length in number of characters.
+
+    The construction Memory for my algorithm small and limited to the fixed buffer size that I read from the file and put there
+    plus the start position vector. I don't load the whole file all at once into memory and read and process it buffer by buffer.
+    For that reason, I have two passes over the file, but based on a few engineering tweaks I managed to only read the file twice and
+    construct the whole tree. I also don't store the last level of the tree which is all `0's as each block
+    belongs to one single character (or no characters) at that level and hence there is no distinction required between
+    characters ending up in left and right branch. I also don't store the block start positions in file as it can be
+    reconstructed easily everytime that we load the index.
+    For improving query time (access, rank, and select) everytime that I load the index in addition to constructing
+    the vector of start positions for each block, I also keep a vector of rank of `1' at the start position of
+    each block. That saves a bunch of bitwise rank queries required in each of the character query processes
+    along the tree and although it doesn't affect the asymptotics of the query time, it helps reduce the constant
+    value and make the processes faster in trade for a small amount of memory.
+
+    The most trickiest part in this task for me was understanding and later implementing the process of
+    selecting the smallest index `idx' that a character `c' occurrs `s' time up to that index.
+    It was challenging because unlike rank that narrows as we go down the levels of the tree
+    and makes it possible to walk the tree top-down, in select, we need to start from the lowest level
+    which is actually the level that each character belongs to a single block and then walk up the tree.
+
+    Here are the plots showing the scalability of the data structure with respect to the bit-vector size
+    and ....
+
+
+    Since I am putting all of these as one executable, the commands interfaces are a little bit
+    different from what the professor has specifically asked but they answer the same queries and
+    build process that is required in the homework.
+    In the following lines, I bring a few examples of different sub-commands for constructing and querying the wavelet tree.
+
+    To construct the wavelet tree, we require two inputs, the input file containing the sequence <input>
+    and the address pointing to the directory we will store the index in, <idx_par_dir>.
+
+    ```
+    > ./bvOperators wv_build -i <input> -p <idx_par_dir>
+    ```
+
+    To call different queries of <access, rank, and select> on the wavelet tree,
+    we require two main inputs, the query file <qfile> and the index directory <idx_par_dir>
+    in addition to specifying the type of the query.
+    ```
+    > ./bvOperators wv -t <access/rank/select> -p <par_dir> -i <qfile>
+    ```
+
 
 \end{document}
