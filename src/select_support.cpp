@@ -106,11 +106,10 @@ int benchmarkSelect(Opts &opts) {
     if (opts.prefix != "console") {
         o.close();
     }
-/*
-    compact::vector<uint64_t, 1> cvec(211);
+    /*compact::vector<uint64_t, 1> cvec(40000000);
     cvec.clear_mem();
     std::cerr << "Started benchmarking rank .. " << cvec.size() <<"\n";
-    for (uint64_t i = 0; i < cvec.size(); i+=10) {
+    for (uint64_t i = 0; i < cvec.size(); i+=11) {
         cvec[i] = 1;
     }
     std::cerr << "Done filling out the bv.\n";
@@ -120,7 +119,6 @@ int benchmarkSelect(Opts &opts) {
     for (uint64_t i = 1; i < cvec.size()/10 + 5; i++) {
         auto select = s(i);
         std::cerr << i << ":" << select << "\n";
-    }
-*/
+    }*/
     return EXIT_SUCCESS;
 }

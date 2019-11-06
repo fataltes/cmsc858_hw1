@@ -44,12 +44,49 @@
     where $1/10$th of each bit-vector bits are set and also the overhead size of the rank data structure for each sample.
 
 
+    plots go here
+
+
+
     The most difficult section in this task was undoubtedly handling R_p indices and later finding the appropriate index
     for each bit-vector of R_s, R_b, and R_p based on the input requested value.
 
-    You can run the command for this
+    You can run the command for this report as following:
+    ```
+    > ./bvOperators report -t rank -p console
+    ```
+    If you want to store the results in a file, provide the parent directory path after `-p` rather than the keyword `console'.
+    ```
+    > ./bvOperators report -t rank -p <par_dir>
+    ```
+    There are 3 options available for report sub-command to set minimum, maximum, and jump size for different bit-vectors that rank is going to be tested on.
 
     \section{Task2}
+    In this task, I implemented the $O(log(n))$ time version of the select which requires no extra space
+    if rank is also available on the bit-vector and the same space as rank otherwise. It basically is
+    a binary search using rank operation to find the bit with the appropriate rank and return its index.
+
+    There wasn't any main challenges in this task except maybe in the engineering aspect of it.
+    The most challenging part for me was how to prevent code chunk repetition by best utilizing templates
+    etc.
+
+    Same plots as task one have been provided for this task as well.
+
+
+    plots go here
+
+
+
+    You can run the command for this report as following:
+    ```
+    > ./bvOperators report -t select -p console
+    ```
+    If you want to store the results in a file, provide the parent directory path after `-p` rather than the keyword `console'.
+    ```
+    > ./bvOperators report -t select -p <par_dir>
+    ```
+    There are 3 options available for report sub-command to set minimum, maximum, and jump size for different bit-vectors that rank is going to be tested on.
 
     \section{Task3}
+
 \end{document}
