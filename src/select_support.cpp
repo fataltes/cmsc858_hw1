@@ -16,6 +16,16 @@ uint64_t Select_support::select1(uint64_t i) {
     return recursiveSelect(s, e, i);
 }
 
+uint64_t Select_support::select0(uint64_t i) {
+    if (i == 0) {
+        std::cerr << "Warning! select works on values greater than 0.\n";
+        std::exit(5);
+    }
+    auto n = r.getBvSize();
+    uint64_t s{0}, e{n};
+    return recursiveSelect0(s, e, i);
+}
+
 uint64_t Select_support::recursiveSelect(uint64_t s, uint64_t e, uint64_t g) {
     auto m = (e+s)/2;
     if (m == r.getBvSize()) {
@@ -23,6 +33,22 @@ uint64_t Select_support::recursiveSelect(uint64_t s, uint64_t e, uint64_t g) {
         return r.getBvSize();
     }
     auto rank = r(m);
+    if (rank == g) {
+        return r.getSetIdxLessEqual(m);
+    } else if (rank > g) {
+        recursiveSelect(s, m-1, g);
+    } else {
+        recursiveSelect(m+1, e, g);
+    }
+}
+
+uint64_t Select_support::recursiveSelect0(uint64_t s, uint64_t e, uint64_t g) {
+    auto m = (e+s)/2;
+    if (m == r.getBvSize()) {
+        std::cerr << "Warning: Select input > total # of 1s in the bv. returning the bv size.\n";
+        return r.getBvSize();
+    }
+    auto rank = r.rank0(m);
     if (rank == g) {
         return r.getSetIdxLessEqual(m);
     } else if (rank > g) {
