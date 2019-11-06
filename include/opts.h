@@ -11,6 +11,8 @@ struct Opts {
     uint64_t minBVSize{10000};
     uint64_t maxBVSize{1000000};
     uint64_t jumpSize{100000};
+    std::string prefix = "console";
+    std::string inputFile;
 };
 
 #endif //BVOPERATORS_OPTS_H

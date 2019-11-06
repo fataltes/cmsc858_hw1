@@ -1,6 +1,7 @@
 add_library(bvOperators_core
         rank_support.cpp
-        select_support.cpp)
+        select_support.cpp
+        waveletTree.cpp)
 
 set(BVOPERATORS_DEBUG_CXXFLAGS "${BVOPERATORS_CXX_FLAGS};-g")
 set(BVOPERATORS_RELEASE_CXXFLAGS "${BVOPERATORS_CXX_FLAGS};-O3")

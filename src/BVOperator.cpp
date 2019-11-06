@@ -13,14 +13,14 @@
 //#include "CLI/Timer.hpp"
 using namespace clipp;
 
-int benchMarkRank(Opts& opts);
-int benchMarkSelect(Opts& opts);
-int benchMarkWaveletTrees(Opts& opts);
+int benchmarkRank(Opts &opts);
+int benchmarkSelect(Opts &opts);
+int constructWaveletTree(Opts &opts);
 
 int main(int argc, char* argv[])  {
     (void) argc;
     Opts opts;
-    enum class mode {help, rank, select, wv};
+    enum class mode {help, rank, select, wv_construct, wv_access, wv_rank, wv_support};
     mode selected = mode::help;
 
     // Rank Mode, prepare the rank performance distribution over bv size
@@ -36,8 +36,25 @@ int main(int argc, char* argv[])  {
                     (option("-e", "--endSize") & value("maxBVSize", opts.maxBVSize)) % "The max bv size to benchmark (default:1,000,000)",
                     (option("-j", "--jumpSize") & value("deltaSize", opts.jumpSize)) % "The bv size to start with (default: 100,000)"
     );
-    auto wvMode = (
-            command("wavelet").set(selected, mode::wv),
+    auto wvConstructMode = (
+            command("wv_construct").set(selected, mode::wv_construct),
+                    (option("-i", "--input_file") & value("inputFile", opts.inputFile)) % "The file containing the input sequence",
+                    (option("-p", "--index_prefix") & value("indexPrefix", opts.prefix)) % "The directory to store the index (default:cout in console)"
+    );
+    auto wvRankMode = (
+            command("wv_rank").set(selected, mode::wv_rank),
+                    (option("-s", "--startSize") & value("minBVSize", opts.minBVSize)) % "The bv size to start benchmarking with (default:10,000)",
+                    (option("-e", "--endSize") & value("maxBVSize", opts.maxBVSize)) % "The max bv size to benchmark (default:1,000,000)",
+                    (option("-j", "--jumpSize") & value("deltaSize", opts.jumpSize)) % "The bv size to start with (default: 100,000)"
+    );
+    auto wvSupportMode = (
+            command("wv_support").set(selected, mode::wv_support),
+                    (option("-s", "--startSize") & value("minBVSize", opts.minBVSize)) % "The bv size to start benchmarking with (default:10,000)",
+                    (option("-e", "--endSize") & value("maxBVSize", opts.maxBVSize)) % "The max bv size to benchmark (default:1,000,000)",
+                    (option("-j", "--jumpSize") & value("deltaSize", opts.jumpSize)) % "The bv size to start with (default: 100,000)"
+    );
+    auto wvAccessMode = (
+            command("wv_access").set(selected, mode::wv_access),
                     (option("-s", "--startSize") & value("minBVSize", opts.minBVSize)) % "The bv size to start benchmarking with (default:10,000)",
                     (option("-e", "--endSize") & value("maxBVSize", opts.maxBVSize)) % "The max bv size to benchmark (default:1,000,000)",
                     (option("-j", "--jumpSize") & value("deltaSize", opts.jumpSize)) % "The bv size to start with (default: 100,000)"
@@ -48,7 +65,9 @@ int main(int argc, char* argv[])  {
 
     bool showHelp = false;
     auto cli = (
-            (rankMode | selectMode | wvMode | command("help").set(selected,mode::help) |
+            (rankMode | selectMode |
+            wvConstructMode | wvRankMode | wvSupportMode | wvAccessMode |
+                    command("help").set(selected,mode::help) |
             option("--help", "-h").set(showHelp, true) % "show help"
             ));
 
@@ -68,9 +87,18 @@ int main(int argc, char* argv[])  {
 
     if(res) {
         switch(selected) {
-            case mode::rank: benchMarkRank(opts); std::cerr << "Done\n"; break;
-            case mode::select: benchMarkSelect(opts);  break;
-            case mode::wv: benchMarkWaveletTrees(opts); break;
+            case mode::rank:
+                benchmarkRank(opts); std::cerr << "Done\n"; break;
+            case mode::select:
+                benchmarkSelect(opts);  break;
+            case mode::wv_construct:
+                constructWaveletTree(opts); break;
+            case mode::wv_access:
+                constructWaveletTree(opts); break;
+            case mode::wv_rank:
+                constructWaveletTree(opts); break;
+            case mode::wv_support:
+                constructWaveletTree(opts); break;
             case mode::help: std::cout << make_man_page(cli, "bvOperate"); break;
         }
     }

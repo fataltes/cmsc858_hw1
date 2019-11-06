@@ -5,6 +5,8 @@
 #ifndef BVOPERATORS_RANKSUPPORT_H
 #define BVOPERATORS_RANKSUPPORT_H
 
+#include <ostream>
+
 #include "opts.h"
 #include "compact_vector/compact_vector.hpp"
 
@@ -22,6 +24,8 @@ public:
 
     uint64_t getBvSize() const;
     uint64_t getSetIdxLessEqual(uint64_t i);
+
+    bool serialize(std::ofstream out);
 
 private:
     uint64_t bvSize;

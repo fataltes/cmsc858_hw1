@@ -32,6 +32,7 @@ uint64_t Select_support::recursiveSelect(uint64_t s, uint64_t e, uint64_t g) {
     }
 }
 
+
 uint64_t Select_support::select0(uint64_t i) {
     return 0;
 }
@@ -40,7 +41,7 @@ uint64_t Select_support::overhead() {
     return 0;
 }
 
-int benchMarkSelect(Opts& opts) {
+int benchmarkSelect(Opts &opts) {
     compact::vector<uint64_t, 1> cvec(211);
     cvec.clear_mem();
     std::cerr << "Started benchmarking rank .. " << cvec.size() <<"\n";

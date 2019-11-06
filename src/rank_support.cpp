@@ -4,6 +4,8 @@
 #include "rank_support.h"
 #include <vector>
 #include <cmath>
+#include <rank_support.h>
+
 
 /**
  *
@@ -119,7 +121,11 @@ uint64_t Rank_support::getSetIdxLessEqual(uint64_t i) {
     }
 }
 
-int benchMarkRank(Opts& opts) {
+bool Rank_support::serialize(std::ofstream out) {
+    return false;
+}
+
+int benchmarkRank(Opts &opts) {
     compact::vector<uint64_t, 1> cvec(211);
     cvec.clear_mem();
     std::cerr << "Started benchmarking rank .. " << cvec.size() <<"\n";
@@ -139,4 +145,3 @@ int benchMarkRank(Opts& opts) {
     }
     return EXIT_SUCCESS;
 }
-int benchMarkWaveletTrees(Opts& opts) {}
