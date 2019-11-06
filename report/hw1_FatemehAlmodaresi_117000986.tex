@@ -1,0 +1,55 @@
+%%
+%% Author: fatemeh
+%% 2019-11-06
+%%
+
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+
+% Document
+\begin{document}
+    \section{Introduction}
+    Succinct operations, specifically rank and select over bit-vectors are important in helping with time and space efficiency of the softwares.
+    They operate over a set of bits.For a bit-vector $bv$ with size $bv.size$, $Rank1(idx)$ for $0<=idx<bv.size$
+    returns the number of $1$s until index $idx$ inclusive and $Rank0(idx)$ returns number of $0$s in the same range.
+    Select operation can be counted as the inverse of rank where $select1(v)$ for $1<=v<=Rank1(bv.size)$ returns the index of the $v$th $1$ in $bv$.
+    To apply rank and select operations in a world with alphabets more than only $0$ and $1$, one of the very popular
+    and practical data structures are the Wavelet trees. Wavelet trees are binary perfectly balanced trees
+    that index a text consisting of alphabet in set $\sigma$ to a set of $0$ and $1$s so that operations such as rank of the character $c$
+    and select of character $c$, $c \in \sigma$, can be reduced to a bunch of bit-vector rank and select operations.
+
+    In this homework, we were supposed to implement rank and select operations for an already existing bit-vector in tasks 1 and 2
+    and later, use these operations in querying a wavelet tree data structure that we have constructed, stored to, and later loaded from the disk.
+
+    All code has been implemented in C++14 and is available in the CMake-based project repository https://github.com/fataltes/cmsc858_hw1.git.
+    I have used a slightly modified version of the ``compact bit-vector'' package from https://github.com/gmarcais/compact_vector.git as the underlying bit-vector data structure.
+
+    This report only contains the abstract overview of the implementation and the reports and plots.
+
+    The installation process is the typical cmake, build process. The least required cmake version is $3.9$
+    and I have compiled all the codes using gcc version $5.5$.
+
+    The main command available is `>bvOperators` and later we can add options and sub-commands to see the results for different tasks.
+
+    \section{Task1}
+    In this task, I implemented a rank data structure over the compact::bitvector structure.
+    The rank data structure itself consists of three bit-vectors, R_s, R_b, and R_p. I tried the version that
+    trades off time for space? so I will store R_p as well which is $\bigO(log(log(n))*log(n)*2^log(n))$ extra space,
+    but reduces the time to just the constant time required to have a couple look-ups over the three bit-vectors
+    rather than at the point of the blocks, walking them until we find the desired value/index.
+    The following are the average time required per rank query for various sizes of bit-vectors,
+    where $1/10$th of each bit-vector bits are set and also the overhead size of the rank data structure for each sample.
+
+
+    The most difficult section in this task was undoubtedly handling R_p indices and later finding the appropriate index
+    for each bit-vector of R_s, R_b, and R_p based on the input requested value.
+
+    You can run the command for this
+
+    \section{Task2}
+
+    \section{Task3}
+\end{document}
