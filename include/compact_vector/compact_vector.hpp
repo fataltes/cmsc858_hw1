@@ -199,7 +199,7 @@ namespace compact {
 
             size_t bytes() const { return sizeof(W) * elements_to_words(m_size, bits()); }
 
-            inline unsigned bits() const { return static_cast<const Derived *>(this)->bits(); }
+            inline unsigned bits() const { return BITS?BITS:static_cast<const Derived *>(this)->bits(); }
 
             static constexpr unsigned static_bits() { return BITS; }
 
@@ -348,13 +348,14 @@ namespace compact {
 
             void reserve(size_t m) {
                 m_capacity = m;
-                m_mem = m_allocator.allocate(elements_to_words(m, BITS));
+                m_mem = m_allocator.allocate(elements_to_words(m_capacity, bits()));
             }
 
             void resize(size_t m) {
+                m_allocator.deallocate(m_mem, elements_to_words(m_capacity, bits()));
                 m_size = m;
                 m_capacity = m;
-                m_mem = m_allocator.allocate(elements_to_words(m, BITS));
+                m_mem = m_allocator.allocate(elements_to_words(m_capacity, bits()));
             }
 
             vector &operator=(vector &vec) {

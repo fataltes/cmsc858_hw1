@@ -12,16 +12,16 @@
 
 WaveletTree::WaveletTree(std::string &inputFile, bool loadIndex) {
     if (loadIndex) {
-        loadWVTree(inputFile);
+        loadIdx(inputFile);
     } else {
-        initializingWVTree(inputFile);
+        initializeWVTree(inputFile);
         wv = new compact::vector<uint64_t, 1>(static_cast<uint64_t >(std::ceil(std::log2(chars.size())) * seqLen));
         wv->clear_mem();
         construct(inputFile);
     }
 }
 
-bool WaveletTree::loadWVTree(std::string &prefix) {
+bool WaveletTree::loadIdx(std::string &prefix) {
     std::cout << "loading the index from " + prefix + "..\n";
     std::ifstream idxInfo(prefix + "/" + BVOperators::idxInfoFileName,
                           std::ios::binary | std::ios::in);
@@ -57,14 +57,13 @@ bool WaveletTree::loadWVTree(std::string &prefix) {
         if (i % 2  == 0) {
             spos[i] += (spos[par+1]-srank[par+1])-(spos[par]-srank[par]);
         }
-//        std::cerr << i << " " << spos[i] << "\n";
         srank[i] = r->rank1(spos[i]-1);
     }
     std::cerr << "Index loaded successfully.\n";
     return true;
 }
 
-bool WaveletTree::initializingWVTree(std::string &fileName) {
+bool WaveletTree::initializeWVTree(std::string &fileName) {
     uint64_t bufferSize = 100000;
     std::vector<char> buffer(bufferSize, 0);
     std::ifstream in( fileName, std::ios::binary | std::ios::ate);
@@ -104,13 +103,11 @@ bool WaveletTree::initializingWVTree(std::string &fileName) {
     uint64_t idx{0};
     for (auto &v : chars) {
         spos[lowestLevelStart+idx] = v.second;
-//        std::cerr << "idx=" << idx << " " << lowestLevelStart+idx << " " << spos[lowestLevelStart+idx] << "\n";
         v.second = idx++;
     }
     // we're done with reading the file at this point
 
     for (int i = lowestLevelStart - 1; i >= 0; i--) {
-//        std::cerr << i << "->" << 2*i+1 << "," << 2*i+2 << "\n";
         spos[i] = spos[2*i+1] + spos[2*i+2];
     }
     uint64_t s{0}, len{0};
@@ -125,10 +122,6 @@ bool WaveletTree::initializingWVTree(std::string &fileName) {
         }
     }
     std::cerr << "Wavelet tree initialized.\n";
-
-    /*for (auto i = 0; i < spos.size(); i++) {
-        std::cerr << i << ":" << spos[i] << "\n";
-    }*/
     return true;
 }
 
@@ -141,7 +134,6 @@ bool WaveletTree::construct(std::string &fileName) {
     while (cursor < seqLen) {
         in.read(buffer.data(), bufferSize);
         for (auto c : buffer) {
-//            std::cerr << chars[c] << "\n";
             insertIntoWVRecursively(chars[c], 0);
         }
         cursor += bufferSize;
@@ -151,7 +143,6 @@ bool WaveletTree::construct(std::string &fileName) {
     buffer.resize(bufferSize);
     in.read(buffer.data(), bufferSize);
     for (auto c : buffer) {
-//        std::cerr << chars[c] << "\n";
         insertIntoWVRecursively(chars[c], 0);
     }
     in.close();
@@ -243,8 +234,8 @@ int WaveletTree::rank(char c, uint64_t idx) {
     return offset+1;
 }
 
-uint64_t WaveletTree::select(char c, uint64_t idx) {
-    return wv->size();
+int WaveletTree::select(char c, uint64_t idx) {
+   return 0;
 }
 
 
@@ -289,8 +280,12 @@ int operateOnWaveletTree(Opts &opts) {
         std::cout << "Results of SELECT operation:\n";
         while (query.good()) {
             query >> c >> idx;
-            if (query.good())
-                std::cout << idx << ":" << wv.select(c, idx) << "\n";
+            if (query.good()) {
+                int res = wv.select(c, idx);
+                if (res >= 0) {
+                    std::cout << idx << ":" << res << "\n";
+                }
+            }
         }
     }
 }

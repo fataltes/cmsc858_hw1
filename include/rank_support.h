@@ -13,7 +13,8 @@
 
 class Rank_support {
 public:
-    explicit Rank_support(compact::vector<uint64_t, 1> &cvecIn) : cvec(cvecIn) {
+    explicit Rank_support(compact::vector<uint64_t, 1> &cvecIn) :
+    cvec(cvecIn) , Rs(0) , Rb (0) , Rp(0) {
         construct();
     }
 
@@ -25,8 +26,6 @@ public:
     uint64_t getBvSize() const;
     uint64_t getSetIdxLessEqual(uint64_t i);
 
-    bool serialize(std::ofstream out);
-
 private:
     uint64_t bvSize;
     uint32_t s = 0;
@@ -34,9 +33,9 @@ private:
     uint32_t p = 0;
     uint32_t blocksPerSuperBlock = 0;
     compact::vector<uint64_t, 1> &cvec;
-    compact::vector<uint64_t>* Rs{};
-    compact::vector<uint64_t>* Rb{};
-    compact::vector<uint64_t>* Rp{};
+    compact::vector<uint64_t> Rs;
+    compact::vector<uint64_t> Rb;
+    compact::vector<uint64_t> Rp;
     void construct();
 };
 

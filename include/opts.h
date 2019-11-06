@@ -10,15 +10,17 @@
 namespace BVOperators {
     constexpr char wvIdxFileName[] = "wv.bin";
     constexpr char idxInfoFileName[] = "idxInfo.bin";
+    constexpr char rankStatFileName[] = "rank.stat";
+    constexpr char selectStatFileName[] = "select.stat";
 }
 
 enum Operation {
     acc, rnk, sel
 };
 struct Opts {
-    uint64_t minBVSize{10000};
-    uint64_t maxBVSize{1000000};
-    uint64_t jumpSize{100000};
+    uint64_t minBVSize{1000000};
+    uint64_t maxBVSize{10000000};
+    uint64_t jumpSize{1000000};
     std::string prefix = "console";
     std::string inputFile;
     Operation operation = Operation::acc;

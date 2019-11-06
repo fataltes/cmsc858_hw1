@@ -4,8 +4,7 @@
 #include "rank_support.h"
 #include <vector>
 #include <cmath>
-#include <rank_support.h>
-
+#include <chrono>
 
 /**
  *
@@ -32,41 +31,41 @@ void Rank_support::construct() {
     p = static_cast<uint32_t>(std::ceil(std::log2(b)));
     std::cerr << "p = " << p << "\n";
 
-//    std::vector<uint64_t> Rs, Rb;
     auto sWidth = static_cast<uint32_t >(std::ceil(std::log2(bvSize)));
-    Rs = new compact::vector<uint64_t>(sWidth, static_cast<uint64_t>(std::ceil(bvSize/(double)s)));
-    Rs->clear_mem();
+    Rs.set_m_bits(sWidth);
+    Rs.resize(static_cast<uint64_t>(std::ceil(bvSize/(double)s)));
+    Rs.clear_mem();
     auto bWidth = static_cast<uint32_t >(std::ceil(std::log2(sWidth)));
     blocksPerSuperBlock = static_cast<uint32_t >(std::ceil(s/(double)b));
-    Rb = new compact::vector<uint64_t>(bWidth, static_cast<uint64_t>(Rs->size()*blocksPerSuperBlock));
-    Rb->clear_mem();
-    auto pWidth = static_cast<uint32_t >(std::ceil(std::log2(bWidth)));
-    Rp = new compact::vector<uint64_t>(pWidth, static_cast<uint64_t>(std::pow(2, b) * b));
-    Rp->clear_mem();
-    std::cerr << "Rs.size(): " << Rs->size() << " Rb.size(): " << Rb->size() << " Rp.size(): " << Rp->size() << "\n";
+    Rb.set_m_bits(bWidth);
+    Rb.resize(static_cast<uint64_t>(Rs.size()*blocksPerSuperBlock));
+    Rb.clear_mem();
+    auto pWidth = static_cast<uint32_t >(std::ceil(std::log2(b)));
+    Rp.set_m_bits(pWidth);
+    Rp.resize(static_cast<uint64_t>(std::pow(2, b) * b));
+    Rp.clear_mem();
 
     // Filling Rp
-    for (auto i = 0; i < Rp->size(); i++) {
+    for (auto i = 0; i < Rp.size()/b; i++) {
         uint32_t accumRank = 0;
         for (auto j = 0; j < b; j++) {
             accumRank += (i >> j) & 1;
-//            std::cerr << i << " " << j << " " << accumRank << "\bvSize";
-            (*Rp)[i*b + j] = accumRank;
+            Rp[i*b + j] = accumRank;
         }
     }
-
     // Filling Rs and Rb
     uint32_t i{0}, bitCnt{0}, accumOneCnt{0}, superBlockOneCnt{0}, blockOneCnt{0}, endOfBlock{s}, RsIdx{0}, RbIdx{0};
 
     while (i < bvSize) {
         if (i % s == 0) {
-            (*Rs)[RsIdx++] = accumOneCnt;
+            Rs[RsIdx++] = accumOneCnt;
             superBlockOneCnt = 0;
             endOfBlock = RsIdx*s;
         }
-        (*Rb)[RbIdx] = superBlockOneCnt;
+        Rb[RbIdx] = superBlockOneCnt;
         RbIdx++;
         bitCnt=endOfBlock-i > 0 and endOfBlock-i < b? endOfBlock - i : b;
+        bitCnt = std::min(static_cast<uint32_t >(cvec.size()-i), bitCnt);
         auto wrd = cvec.get_int(i, bitCnt);
         blockOneCnt = __builtin_popcount(wrd);
         superBlockOneCnt += blockOneCnt;
@@ -89,9 +88,11 @@ uint64_t Rank_support::rank1(uint64_t i) {
     auto bits = nextBlockStart - blockStartOnBV != 0 and nextBlockStart - blockStartOnBV < b ? nextBlockStart - blockStartOnBV : b;
     auto pType = cvec.get_int(blockStartOnBV, bits);
     uint64_t RpIdx = pType*b+(i%s)%b;
-    val = (*Rs)[RsIdx] + (*Rb)[RbIdx] + (*Rp)[RpIdx];
-//    std::cerr << i << ":rs=" << RsIdx << "," << (*Rs)[RsIdx] << " rb=" << RbIdx << "," << (*Rb)[RbIdx]
-//    << " rp=" << RpIdx << "," << (*Rp)[RpIdx] << " blockStart=" << blockStartOnBV << " bits=" << bits << "\n";
+    if (RsIdx >= Rs.size() or RbIdx >= Rb.size() or RpIdx >= Rp.size()) {
+        std::cerr << "Error! rank=" << i << " RsIdx=" << RsIdx << " RbIdx=" << RbIdx << " RpIdx" << RpIdx << "\n";
+        std::exit(3);
+    }
+    val = Rs[RsIdx] + Rb[RbIdx] + Rp[RpIdx];
     return val;
 }
 
@@ -100,7 +101,7 @@ uint64_t Rank_support::rank0(uint64_t i) {
 }
 
 uint64_t Rank_support::overhead() {
-    return Rs->bits() + Rb->bits() + Rp->bits();
+    return (Rs.bytes() + Rb.bytes() + Rp.bytes())*8;
 }
 
 uint64_t Rank_support::getBvSize() const {
@@ -121,12 +122,30 @@ uint64_t Rank_support::getSetIdxLessEqual(uint64_t i) {
     }
 }
 
-bool Rank_support::serialize(std::ofstream out) {
-    return false;
-}
-
 int benchmarkRank(Opts &opts) {
-    compact::vector<uint64_t, 1> cvec(211);
+    std::string filename = opts.prefix + "/" + BVOperators::rankStatFileName;
+    std::ofstream o(filename, std::ios::out);
+    o << "bv_size\trank_size\tavg_rank_time\n";
+    for (auto v = opts.minBVSize; v < opts.maxBVSize; v+=opts.jumpSize) {
+        std::cerr << "V" << v << "\n";
+        compact::vector<uint64_t, 1> cvec(v);
+        cvec.clear_mem();
+        for (uint64_t i = 0; i < cvec.size(); i+=10) {
+            cvec[i] = 1;
+        }
+        Rank_support r(cvec);
+        auto start = std::chrono::high_resolution_clock::now();
+        for (uint32_t t = 0; t < cvec.size(); t++) {
+            r(t);
+        }
+        auto finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = finish - start;
+        std::cout << v << "\t" << r.overhead() << "\t" << elapsed.count()/cvec.size() << "\n";
+        o << v << "\t" << r.overhead() << "\t" << elapsed.count()/cvec.size() << "\n";
+    }
+    o.close();
+
+ /*   compact::vector<uint64_t, 1> cvec(1100);
     cvec.clear_mem();
     std::cerr << "Started benchmarking rank .. " << cvec.size() <<"\n";
     for (uint64_t i = 0; i < cvec.size(); i+=10) {
@@ -142,6 +161,6 @@ int benchmarkRank(Opts &opts) {
             std::cerr << i << ":" << rank << "\n";
         }
         prevRank = rank;
-    }
+    }*/
     return EXIT_SUCCESS;
 }

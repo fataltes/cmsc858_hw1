@@ -14,12 +14,12 @@ class WaveletTree {
 public:
     explicit WaveletTree(std::string &inputFile, bool loadIndex=false);
 
-    bool initializingWVTree(std::string &fileName);
+    bool initializeWVTree(std::string &fileName);
     bool serialize(std::string &prefix);
 
     char access(uint64_t idx);
     int rank(char c, uint64_t idx);
-    uint64_t select(char c, uint64_t idx);
+    int select(char c, uint64_t idx);
 
 private:
     std::string indexPrefix;
@@ -32,7 +32,7 @@ private:
     std::vector<uint64_t> srank;
     bool construct(std::string &fileName);
     void insertIntoWVRecursively(uint64_t c, uint64_t level);
-    bool loadWVTree(std::string &prefix);
+    bool loadIdx(std::string &prefix);
     Rank_support *r;
     Select_support *s;
 };
