@@ -216,7 +216,7 @@ int64_t WaveletTree::rank(char c, uint64_t idx) {
     }
     uint64_t charId = chars[c];
     uint64_t blockIdx{0}, blockStart{0}, vIdx{idx}, v{0};
-    int offset{0};
+    int64_t offset{0};
     for (uint64_t level = 0; level < charLen; level++) {
         // load value at current level
         v = (charId >> (charLen-level-1)) & 1;
@@ -287,7 +287,7 @@ int operateOnWaveletTree(Opts &opts) {
         while (query.good()) {
             query >> c >> idx;
             if (query.good()) {
-                int res = wv.rank(c, idx);
+                auto res = wv.rank(c, idx);
                 if (res >= 0) {
                     std::cout << idx << ":" << res << "\n";
                 }
@@ -298,7 +298,7 @@ int operateOnWaveletTree(Opts &opts) {
         while (query.good()) {
             query >> c >> idx;
             if (query.good()) {
-                int res = wv.select(c, idx);
+                auto res = wv.select(c, idx);
                 if (res >= 0) {
                     std::cout << idx << ":" << res << "\n";
                 }

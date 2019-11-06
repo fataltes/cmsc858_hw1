@@ -8,7 +8,7 @@
 
 uint64_t Select_support::select1(uint64_t i) {
     if (i == 0) {
-        std::cerr << "Warning! select works on values greater than 0.\n";
+        std::cerr << "Error! select works on values greater than 0.\n";
         std::exit(5);
     }
     auto n = r.getBvSize();
@@ -18,7 +18,7 @@ uint64_t Select_support::select1(uint64_t i) {
 
 uint64_t Select_support::select0(uint64_t i) {
     if (i == 0) {
-        std::cerr << "Warning! select works on values greater than 0.\n";
+        std::cerr << "Error! select works on values greater than 0.\n";
         std::exit(5);
     }
     auto n = r.getBvSize();
@@ -32,7 +32,12 @@ uint64_t Select_support::recursiveSelect(uint64_t s, uint64_t e, uint64_t g) {
         std::cerr << "Warning: Select input > total # of 1s in the bv. returning the bv size.\n";
         return r.getBvSize();
     }
+    if (s > e) {
+        std::cerr << g << " not found\n";
+        return r.getBvSize();
+    }
     auto rank = r(m);
+//    std::cerr << s << " " << e << " " << m << " " << rank << " " << g << "\n";
     if (rank == g) {
         return r.getSetIdxLessEqual(m);
     } else if (rank > g) {
@@ -48,7 +53,13 @@ uint64_t Select_support::recursiveSelect0(uint64_t s, uint64_t e, uint64_t g) {
         std::cerr << "Warning: Select input > total # of 1s in the bv. returning the bv size.\n";
         return r.getBvSize();
     }
+    if (s > e) {
+        std::cerr << g << " not found\n";
+        return r.getBvSize();
+    }
+
     auto rank = r.rank0(m);
+//    std::cerr << s << " " << e << " " << m << " " << rank << " " << g << "\n";
     if (rank == g) {
         return r.getSetIdxLessEqual(m);
     } else if (rank > g) {
