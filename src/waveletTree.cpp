@@ -206,18 +206,13 @@ char WaveletTree::access(uint64_t idx) {
         charId = (charId << 1) | v;
         //find the next level index
         if (v) {
-            offset = r->rank1(vIdx) - srank[blockIdx]-1;
+            offset = (r->rank1(vIdx) - 1) - srank[blockIdx];
         } else {
-            offset = (vIdx - r->rank1(vIdx)) - (blockStart - srank[blockIdx])-1;
+            offset = (r->rank0(vIdx) - 1) - (spos[blockIdx]-srank[blockIdx]);
         }
         blockIdx = blockIdx*2+v+1;
         blockStart = spos[blockIdx];
         vIdx = blockStart+offset;
-        std::cerr << "blockIdx=" << blockIdx
-                  << " blockStart=" << blockStart
-                  << " offset=" << offset
-                  << " vIdx=" << vIdx << " v=" << v
-                  << " charId=" << charId << "\n";
 
     }
     return inverseChars[charId];
@@ -270,19 +265,22 @@ int operateOnWaveletTree(Opts &opts) {
         std::cout << "Results of ACCESS operation:\n";
         while (query.good()) {
             query >> idx;
-            std::cout << idx << ":" << wv.access(idx) << "\n";
+            if (query.good())
+                std::cout << idx << ":" << wv.access(idx) << "\n";
         }
     } else if (opts.operation == Operation::rnk) {
         std::cout << "Results of RANK operation:\n";
         while (query.good()) {
             query >> c >> idx;
-            std::cout << idx << ":" << wv.rank(c, idx) << "\n";
+            if (query.good())
+                std::cout << idx << ":" << wv.rank(c, idx) << "\n";
         }
     } else if (opts.operation == Operation::sel) {
         std::cout << "Results of SELECT operation:\n";
         while (query.good()) {
             query >> c >> idx;
-            std::cout << idx << ":" << wv.select(c, idx) << "\n";
+            if (query.good())
+                std::cout << idx << ":" << wv.select(c, idx) << "\n";
         }
     }
 }
