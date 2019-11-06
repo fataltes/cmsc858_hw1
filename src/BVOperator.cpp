@@ -23,22 +23,19 @@ int main(int argc, char* argv[])  {
     Opts opts;
     std::string type = "access";
 
-    enum class mode {help, rank, select, wv_construct, wv_operations};
+    enum class mode {help, report, wv_construct, wv_operations};
     mode selected = mode::help;
 
     // Rank Mode, prepare the rank performance distribution over bv size
-    auto rankMode = (
-            command("rank").set(selected, mode::rank),
+    auto reportMode = (
+            command("report").set(selected, mode::report),
+                    (option("-t", "--type") & value("OptType", type)) % "options:(rank, select), default:rank",
+                    (option("-p", "--report_prefix") & value("reportPrefix", opts.prefix)) % "The directory to store the report files (default:cout in console)",
                     (option("-s", "--startSize") & value("minBVSize", opts.minBVSize)) % "The bv size to start benchmarking with (default:10,000)",
                     (option("-e", "--endSize") & value("maxBVSize", opts.maxBVSize)) % "The max bv size to benchmark (default:1,000,000)",
                     (option("-j", "--jumpSize") & value("deltaSize", opts.jumpSize)) % "The bv size to start with (default: 100,000)"
     );
-    auto selectMode = (
-            command("select").set(selected, mode::select),
-                    (option("-s", "--startSize") & value("minBVSize", opts.minBVSize)) % "The bv size to start benchmarking with (default:10,000)",
-                    (option("-e", "--endSize") & value("maxBVSize", opts.maxBVSize)) % "The max bv size to benchmark (default:1,000,000)",
-                    (option("-j", "--jumpSize") & value("deltaSize", opts.jumpSize)) % "The bv size to start with (default: 100,000)"
-    );
+
     auto wvConstructMode = (
             command("wv_build").set(selected, mode::wv_construct),
                     (option("-i", "--input_file") & value("inputFile", opts.inputFile)) % "The file containing the input sequence",
@@ -57,8 +54,7 @@ int main(int argc, char* argv[])  {
 
     bool showHelp = false;
     auto cli = (
-            (rankMode | selectMode |
-            wvConstructMode | wvOperationMode |
+            (reportMode | wvConstructMode | wvOperationMode |
                     command("help").set(selected,mode::help) |
             option("--help", "-h").set(showHelp, true) % "show help"
             ));
@@ -78,13 +74,16 @@ int main(int argc, char* argv[])  {
     }
 
     if(res) {
-        std::cout << type << "\n\n\n\n";
-
         switch(selected) {
-            case mode::rank:
-                benchmarkRank(opts); std::cerr << "Done\n"; break;
-            case mode::select:
-                benchmarkSelect(opts);  break;
+            case mode::report:
+                if (type == "rank") {
+                    benchmarkRank(opts); std::cerr << "Done\n"; break;
+                } else if (type == "select") {
+                    benchmarkSelect(opts);  break;
+                } else {
+                    std::cerr << "ERROR! Unrecognized type of report. Options are only (rank, select).\n";
+                    std::exit(3);
+                }
             case mode::wv_construct:
                 constructWaveletTree(opts); break;
             case mode::wv_operations:

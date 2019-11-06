@@ -18,9 +18,9 @@ enum Operation {
     acc, rnk, sel
 };
 struct Opts {
-    uint64_t minBVSize{1000000};
-    uint64_t maxBVSize{10000000};
-    uint64_t jumpSize{1000000};
+    uint64_t minBVSize{10000000};
+    uint64_t maxBVSize{1000000000};
+    uint64_t jumpSize{10000000};
     std::string prefix = "console";
     std::string inputFile;
     Operation operation = Operation::acc;

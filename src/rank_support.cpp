@@ -123,11 +123,16 @@ uint64_t Rank_support::getSetIdxLessEqual(uint64_t i) {
 }
 
 int benchmarkRank(Opts &opts) {
-    std::string filename = opts.prefix + "/" + BVOperators::rankStatFileName;
-    std::ofstream o(filename, std::ios::out);
-    o << "bv_size\trank_size\tavg_rank_time\n";
+    std::ofstream o;
+    if (opts.prefix != "console") {
+        std::string filename = opts.prefix + "/" + BVOperators::rankStatFileName;
+        o.open(filename, std::ios::out);
+        o << "bv_size\trank_size\tavg_rank_time\n";
+    } else {
+        std::cout << "bv_size\trank_size\tavg_rank_time\n";
+    }
     for (auto v = opts.minBVSize; v < opts.maxBVSize; v+=opts.jumpSize) {
-        std::cerr << "V" << v << "\n";
+//        std::cerr << "V" << v << "\n";
         compact::vector<uint64_t, 1> cvec(v);
         cvec.clear_mem();
         for (uint64_t i = 0; i < cvec.size(); i+=10) {
@@ -140,10 +145,15 @@ int benchmarkRank(Opts &opts) {
         }
         auto finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = finish - start;
-        std::cout << v << "\t" << r.overhead() << "\t" << elapsed.count()/cvec.size() << "\n";
-        o << v << "\t" << r.overhead() << "\t" << elapsed.count()/cvec.size() << "\n";
+        if (opts.prefix == "console") {
+            std::cout << v << "\t" << r.overhead() << "\t" << elapsed.count() / cvec.size() << "\n";
+        } else {
+            o << v << "\t" << r.overhead() << "\t" << elapsed.count() / cvec.size() << "\n";
+        }
     }
-    o.close();
+    if (opts.prefix != "console") {
+        o.close();
+    }
 
  /*   compact::vector<uint64_t, 1> cvec(1100);
     cvec.clear_mem();

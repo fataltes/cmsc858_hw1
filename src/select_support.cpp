@@ -2,7 +2,7 @@
 // Created by Fatemeh Almodaresi on 2019-11-05.
 //
 
-#include <select_support.h>
+#include <chrono>
 
 #include "select_support.h"
 
@@ -63,6 +63,39 @@ uint64_t Select_support::overhead() {
 }
 
 int benchmarkSelect(Opts &opts) {
+    std::ofstream o;
+    if (opts.prefix != "console") {
+        std::string filename = opts.prefix + "/" + BVOperators::selectStatFileName;
+        o.open(filename, std::ios::out);
+        o << "bv_size\tselect_size\tavg_select_time\n";
+    } else {
+        std::cout << "bv_size\tselect_size\tavg_select_time\n";
+    }
+    for (auto v = opts.minBVSize; v < opts.maxBVSize; v+=opts.jumpSize) {
+        std::cerr << "V" << v << "\n";
+        compact::vector<uint64_t, 1> cvec(v);
+        cvec.clear_mem();
+        for (uint64_t i = 0; i < cvec.size(); i+=10) {
+            cvec[i] = 1;
+        }
+        Rank_support r(cvec);
+        Select_support s(r);
+        auto start = std::chrono::high_resolution_clock::now();
+        for (uint32_t t = 1; t < cvec.size()/10; t++) {
+            s(t);
+        }
+        auto finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = finish - start;
+        if (opts.prefix == "console") {
+            std::cout << v << "\t" << r.overhead() << "\t" << elapsed.count() / cvec.size() << "\n";
+        } else {
+            o << v << "\t" << r.overhead() << "\t" << elapsed.count() / cvec.size() << "\n";
+        }
+    }
+    if (opts.prefix != "console") {
+        o.close();
+    }
+/*
     compact::vector<uint64_t, 1> cvec(211);
     cvec.clear_mem();
     std::cerr << "Started benchmarking rank .. " << cvec.size() <<"\n";
@@ -77,5 +110,6 @@ int benchmarkSelect(Opts &opts) {
         auto select = s(i);
         std::cerr << i << ":" << select << "\n";
     }
+*/
     return EXIT_SUCCESS;
 }
