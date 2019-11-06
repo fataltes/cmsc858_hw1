@@ -198,19 +198,27 @@ bool WaveletTree::serialize(std::string &prefix) {
 
 char WaveletTree::access(uint64_t idx) {
     uint64_t charId = 0;
-    uint64_t blockStart = 0;
-    uint64_t offset = idx;
+    uint64_t blockIdx{0}, blockStart{0};
+    uint64_t offset = idx, vIdx{blockStart+offset}, v{};
     for (uint64_t level = 0; level < charLen; level++) {
-        auto blockIdx = static_cast<uint64_t >(std::pow(2, level)-1+charId);
-        blockStart = spos[blockIdx];
-        auto vIdx = blockStart+offset;
-        uint16_t v = (*wv)[vIdx];
+        // load value at current level
+        v = (*wv)[vIdx];
         charId = (charId << 1) | v;
+        //find the next level index
         if (v) {
-            offset = r->rank1(vIdx) - srank[blockIdx];
+            offset = r->rank1(vIdx) - srank[blockIdx]-1;
         } else {
-            offset = (vIdx + 1 - r->rank1(vIdx)) - (blockStart - srank[blockIdx]);
+            offset = (vIdx - r->rank1(vIdx)) - (blockStart - srank[blockIdx])-1;
         }
+        blockIdx = blockIdx*2+v+1;
+        blockStart = spos[blockIdx];
+        vIdx = blockStart+offset;
+        std::cerr << "blockIdx=" << blockIdx
+                  << " blockStart=" << blockStart
+                  << " offset=" << offset
+                  << " vIdx=" << vIdx << " v=" << v
+                  << " charId=" << charId << "\n";
+
     }
     return inverseChars[charId];
 }
