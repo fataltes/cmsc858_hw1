@@ -63,9 +63,9 @@ int64_t Select_support::recursiveSelect0(uint64_t s, uint64_t e, uint64_t g) {
     if (rank == g) {
         return r.getSetIdxLessEqual(m, 0);
     } else if (rank > g) {
-        recursiveSelect(s, m-1, g);
+        recursiveSelect0(s, m-1, g);
     } else {
-        recursiveSelect(m+1, e, g);
+        recursiveSelect0(m+1, e, g);
     }
 }
 

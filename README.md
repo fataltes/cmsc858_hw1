@@ -100,13 +100,21 @@ construct the whole tree. I also don't store the last level of the tree which is
 belongs to one single character (or no characters) at that level and hence there is no distinction required between
 characters ending up in left and right branch. I also don't store the block start positions in file as it can be
 reconstructed easily every time that we load the index.
+
 For improving query time (access, rank, and select) every time that I load the index in addition to constructing
 the vector of start positions for each block, I also keep a vector of rank of *1* at the start position of
 each block. That saves a bunch of bitwise rank queries required in each of the character query processes
 along the tree and although it does not affect the asymptotics of the query time, it helps reduce the constant
-value and make the processes faster in trade for a small amount of memory.
+value and make the processes faster in trade for a small amount of memory. There is one more interesting 
+engineering I did for improving the select performance on the wavelet tree too.
+At each level, when we want to call a select which later calls a binary search using rank, 
+I instead directly call the binary search with the manual start and end positions
+ being the start and end position for the block I'm looking into.
+ In this way, at each level, rather than doing a binary search over a sequence of size n
+ which in total costs $O(nlog(\sigma))$,
+ I do the search over a sequence of approximate length ~$n/2^level$. 
 
-The most trickiest part in this task for me was understanding and later implementing the process of
+The trickiest part in this task for me was understanding and later implementing the process of
 selecting the smallest index `idx` that a character *c* occurs *s* time up to that index.
 It was challenging because unlike rank that narrows as we go down the levels of the tree
 and makes it possible to walk the tree top-down, in select, we need to start from the lowest level

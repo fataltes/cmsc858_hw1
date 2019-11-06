@@ -239,21 +239,27 @@ int64_t WaveletTree::select(char c, uint64_t idx) {
         std::cerr << "Character " << c << " invalid. skipping.\n";
         return BVOperators::INVALID;
     }
-    uint64_t childPos = 0;
+    if (idx == 0) {
+        std::cerr << "Error! select works on values greater than 0.\n";
+        std::exit(5);
+    }
+    int64_t childPos = 0;
     uint64_t charId = chars[c];
-    for (auto level = charLen-1; level > 0; level--) {
+    for (int64_t level = charLen-1; level >= 0; level--) {
         uint64_t rIdx = charId >> (charLen-level-1);
         uint64_t lastBit = rIdx & 1;
-        auto blockIdx = static_cast<uint64_t >(std::pow(2, level - 1)-1 + (rIdx >> 1));
+        auto blockIdx = static_cast<uint64_t >(std::pow(2, level)-1 + (rIdx >> 1));
+        auto start = spos[blockIdx];
+        auto end = blockIdx+1 == spos.size()? r->getBvSize() : spos[blockIdx+1];
         if (lastBit) {
-            childPos = s->select1(idx + srank[blockIdx]);
+            childPos = s->recursiveSelect(start, end, idx + srank[blockIdx]);
         } else {
-            childPos = s->select0(idx + (spos[blockIdx] - srank[blockIdx]));
+            childPos = s->recursiveSelect0(start, end, idx + (spos[blockIdx] - srank[blockIdx]));
         }
         if (childPos == BVOperators::INVALID) {
             return BVOperators::INVALID;
         }
-        idx = childPos - spos[blockIdx];
+        idx = childPos - spos[blockIdx] + 1;
     }
    return idx;
 }
@@ -292,7 +298,7 @@ int operateOnWaveletTree(Opts &opts) {
             if (query.good()) {
                 auto res = wv.rank(c, idx);
                 if (res >= 0) {
-                    std::cout << idx << ":" << res << "\n";
+                    std::cout << "character " << c << " happens " << res << " times up to index " << idx << "\n";
                 }
             }
         }
@@ -303,7 +309,7 @@ int operateOnWaveletTree(Opts &opts) {
             if (query.good()) {
                 auto res = wv.select(c, idx);
                 if (res >= 0) {
-                    std::cout << idx << ":" << res << "\n";
+                    std::cout << idx << (idx % 10 == 1?"st ":(idx % 10 == 2)?"nd ":"th ") << c << " happens at index " << res << "\n";
                 }
             }
         }
