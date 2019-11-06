@@ -21,6 +21,8 @@ int operateOnWaveletTree(Opts &opts);
 int main(int argc, char* argv[])  {
     (void) argc;
     Opts opts;
+    std::string type = "access";
+
     enum class mode {help, rank, select, wv_construct, wv_operations};
     mode selected = mode::help;
 
@@ -42,10 +44,9 @@ int main(int argc, char* argv[])  {
                     (option("-i", "--input_file") & value("inputFile", opts.inputFile)) % "The file containing the input sequence",
                     (option("-p", "--index_prefix") & value("indexPrefix", opts.prefix)) % "The directory to store the index (default:cout in console)"
     );
-    std::string type = "access";
     auto wvOperationMode = (
             command("wv").set(selected, mode::wv_operations),
-                    (option("-t", "--type") & value("OptType", type)) % "options:(access, rank, select), default:access",
+                    (option("-t", "--type") & value("OptType", type)) % "options:(access, wv_rank, wv_select), default:access",
                     (option("-i", "--input_file") & value("inputFile", opts.inputFile)) % "The file containing the input queries",
                     (option("-p", "--index_prefix") & value("indexPrefix", opts.prefix)) % "The parent directory of the index"
     );
@@ -77,6 +78,8 @@ int main(int argc, char* argv[])  {
     }
 
     if(res) {
+        std::cout << type << "\n\n\n\n";
+
         switch(selected) {
             case mode::rank:
                 benchmarkRank(opts); std::cerr << "Done\n"; break;
@@ -86,14 +89,15 @@ int main(int argc, char* argv[])  {
                 constructWaveletTree(opts); break;
             case mode::wv_operations:
                 if (type == "access") {
+                    std::cerr << "access\n";
                     opts.operation = Operation::acc;
-                } else if (type == "rank") {
+                } else if (type == "wv_rank") {
                     opts.operation = Operation::rnk;
-                } else if (type == "select") {
+                } else if (type == "wv_select") {
                     opts.operation = Operation::sel;
                 } else {
                     std::cerr << "Undefined Operation: " << type << "\n";
-                    std::cerr << "Please choose from these 3 options: (access, rank, select)\n";
+                    std::cerr << "Please choose from these 3 options: (access, wv_rank, wv_select)\n";
                     std::exit(5);
                 }
                 operateOnWaveletTree(opts); break;

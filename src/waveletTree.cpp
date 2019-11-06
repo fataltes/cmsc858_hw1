@@ -218,23 +218,29 @@ char WaveletTree::access(uint64_t idx) {
     return inverseChars[charId];
 }
 
-uint64_t WaveletTree::rank(char c, uint64_t idx) {
-    uint64_t charId = 0;
-    uint64_t blockStart = 0;
-    uint64_t rnk = idx;
-    for (uint64_t level = 0; level < charLen; level++) {
-        auto blockIdx = static_cast<uint64_t >(std::pow(2, level)-1+charId);
-        blockStart = spos[blockIdx];
-        auto vIdx = level*seqLen+blockStart+rnk;
-        uint16_t v = (*wv)[vIdx];
-        charId = (charId << 1) | v;
-        if (v) {
-            rnk = r->rank1(vIdx) - srank[blockIdx];
-        } else {
-            rnk = vIdx + 1 - r->rank1(vIdx) - (blockIdx + 1 - srank[blockIdx]);
-        }
+int WaveletTree::rank(char c, uint64_t idx) {
+    if (chars.find(c) == chars.end()) {
+        std::cerr << "Character " << c << " invalid. skipping.\n";
+        return -1;
     }
-    return rnk;
+    uint64_t charId = chars[c];
+    uint64_t blockIdx{0}, blockStart{0}, vIdx{idx}, v{0};
+    int offset{0};
+    for (uint64_t level = 0; level < charLen; level++) {
+        // load value at current level
+        v = (charId >> (charLen-level-1)) & 1;
+        //find the next level index
+        if (v) {
+            offset = (r->rank1(vIdx) - 1) - srank[blockIdx];
+        } else {
+            offset = (r->rank0(vIdx) - 1) - (spos[blockIdx]-srank[blockIdx]);
+        }
+        blockIdx = blockIdx*2+v+1;
+        blockStart = spos[blockIdx];
+        vIdx = blockStart+offset;
+
+    }
+    return offset+1;
 }
 
 uint64_t WaveletTree::select(char c, uint64_t idx) {
@@ -272,8 +278,12 @@ int operateOnWaveletTree(Opts &opts) {
         std::cout << "Results of RANK operation:\n";
         while (query.good()) {
             query >> c >> idx;
-            if (query.good())
-                std::cout << idx << ":" << wv.rank(c, idx) << "\n";
+            if (query.good()) {
+                int res = wv.rank(c, idx);
+                if (res >= 0) {
+                    std::cout << idx << ":" << res << "\n";
+                }
+            }
         }
     } else if (opts.operation == Operation::sel) {
         std::cout << "Results of SELECT operation:\n";

@@ -18,7 +18,7 @@ public:
     bool serialize(std::string &prefix);
 
     char access(uint64_t idx);
-    uint64_t rank(char c, uint64_t idx);
+    int rank(char c, uint64_t idx);
     uint64_t select(char c, uint64_t idx);
 
 private:
