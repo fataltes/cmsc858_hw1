@@ -212,7 +212,7 @@ char WaveletTree::access(uint64_t idx) {
 int64_t WaveletTree::rank(char c, uint64_t idx) {
     if (chars.find(c) == chars.end()) {
         std::cerr << "Character " << c << " invalid. skipping.\n";
-        return -1;
+        return BVOperators::INVALID;
     }
     uint64_t charId = chars[c];
     uint64_t blockIdx{0}, blockStart{0}, vIdx{idx}, v{0};
@@ -237,7 +237,7 @@ int64_t WaveletTree::rank(char c, uint64_t idx) {
 int64_t WaveletTree::select(char c, uint64_t idx) {
     if (chars.find(c) == chars.end()) {
         std::cerr << "Character " << c << " invalid. skipping.\n";
-        return -1;
+        return BVOperators::INVALID;
     }
     uint64_t childPos = 0;
     uint64_t charId = chars[c];
@@ -249,6 +249,9 @@ int64_t WaveletTree::select(char c, uint64_t idx) {
             childPos = s->select1(idx + srank[blockIdx]);
         } else {
             childPos = s->select0(idx + (spos[blockIdx] - srank[blockIdx]));
+        }
+        if (childPos == BVOperators::INVALID) {
+            return BVOperators::INVALID;
         }
         idx = childPos - spos[blockIdx];
     }

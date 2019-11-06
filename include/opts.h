@@ -12,6 +12,7 @@ namespace BVOperators {
     constexpr char idxInfoFileName[] = "idxInfo.bin";
     constexpr char rankStatFileName[] = "rank.stat";
     constexpr char selectStatFileName[] = "select.stat";
+    constexpr int64_t INVALID = -1;
 }
 
 enum Operation {

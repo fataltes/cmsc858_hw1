@@ -32,11 +32,11 @@ int64_t Select_support::recursiveSelect(uint64_t s, uint64_t e, uint64_t g) {
     auto m = (e+s)/2;
     if (m == r.getBvSize()) {
 //        std::cerr << "Warning: Select input > total # of 1s in the bv. returning the bv size.\n";
-        return -1;
+        return BVOperators::INVALID;
     }
     if (s > e) {
 //        std::cerr << g << " not found\n";
-        return -1;
+        return BVOperators::INVALID;
     }
     auto rank = r(m);
     if (rank == g) {
@@ -52,11 +52,11 @@ int64_t Select_support::recursiveSelect0(uint64_t s, uint64_t e, uint64_t g) {
     auto m = (e+s)/2;
     if (m == r.getBvSize()) {
 //        std::cerr << "Warning: Select input > total # of 1s in the bv. returning the bv size.\n";
-        return -1;
+        return BVOperators::INVALID;
     }
     if (s > e) {
 //        std::cerr << g << " not found\n";
-        return -1;
+        return BVOperators::INVALID;
     }
 
     auto rank = r.rank0(m);
