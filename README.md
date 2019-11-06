@@ -130,12 +130,15 @@ and the address pointing to the directory we will store the index in, `<idx_par_
 
 To call different queries of <access, rank, and select> on the wavelet tree,
 we require two main inputs, the query file `<qfile>` and the index directory `<idx_par_dir>`
-in addition to specifying the type of the query.
+in addition to specifying the type of the query.[^ps]
 ```
 > ./bvOperators wv -t <access/rank/select> -p <par_dir> -i <qfile>
 ```
 
-P.S. Although I tried to catch a couple special cases with an invalid input
+
+
+---------------
+[^ps]: P.S. Although I tried to catch a couple special cases with an invalid input
 such as querying for a character that does not exist in the alphabet of wavelet tree,
 Unfortunately, for the sake of time-limitation for this homework I was not able to manage all the
 specific flaws in the input arguments such as a wrong file format, a non-existing directory, etc.
