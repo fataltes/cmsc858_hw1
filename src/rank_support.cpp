@@ -108,7 +108,7 @@ uint64_t Rank_support::getBvSize() const {
     return bvSize;
 }
 
-uint64_t Rank_support::getSetIdxLessEqual(uint64_t i) {
+uint64_t Rank_support::getSetIdxLessEqual(uint64_t i, uint64_t v) {
     auto idx = i;
     while (true) {
         if (!idx) return 0;
@@ -116,7 +116,7 @@ uint64_t Rank_support::getSetIdxLessEqual(uint64_t i) {
         auto bits = idx-start+1;
         auto wrd = cvec.get_int(start, bits);
         for (auto shiftVal = bits-1; shiftVal >= 0; shiftVal--) {
-            if (wrd >> shiftVal & 1) return idx;
+            if ( (wrd >> shiftVal & 1) == v) return idx;
             idx--;
         }
     }

@@ -24,7 +24,7 @@ public:
     uint64_t overhead();
 
     uint64_t getBvSize() const;
-    uint64_t getSetIdxLessEqual(uint64_t i);
+    uint64_t getSetIdxLessEqual(uint64_t i, uint64_t v);
 
 private:
     uint64_t bvSize;
