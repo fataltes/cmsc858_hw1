@@ -18,8 +18,8 @@ and select of character *c*, $c \in \sigma$, can be reduced to a bunch of bit-ve
 In this homework, we were supposed to implement rank and select operations for an already existing bit-vector in tasks 1 and 2
 and later, use these operations in querying a wavelet tree data structure that we have constructed, stored to, and later loaded from the disk.
 
-All code has been implemented in C++14 and is available in the CMake-based project repository https://github.com/fataltes/cmsc858_hw1.git.
-I have used a slightly modified version of the ``compact bit-vector'' package from https://github.com/gmarcais/compact_vector.git as the underlying bit-vector data structure.
+All code has been implemented in C++14 and is available in the CMake-based project repository "*https://github.com/fataltes/cmsc858_hw1.git*".
+I have used a slightly modified version of the `compact bit-vector` package from "*https://github.com/gmarcais/compact_vector.git*" as the underlying bit-vector data structure.
 
 This report only contains the abstract overview of the implementation and the reports and plots.
 
