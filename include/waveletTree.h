@@ -18,8 +18,8 @@ public:
     bool serialize(std::string &prefix);
 
     char access(uint64_t idx);
-    int rank(char c, uint64_t idx);
-    int select(char c, uint64_t idx);
+    int64_t rank(char c, uint64_t idx);
+    int64_t select(char c, uint64_t idx);
 
 private:
     std::string indexPrefix;
