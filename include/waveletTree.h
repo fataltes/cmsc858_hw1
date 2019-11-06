@@ -17,19 +17,24 @@ public:
     bool initializingWVTree(std::string &fileName);
     bool serialize(std::string &prefix);
 
-    void access(uint64_t idx);
-    void rank(char c, uint64_t idx);
-    void select(char c, uint64_t idx);
+    char access(uint64_t idx);
+    uint64_t rank(char c, uint64_t idx);
+    uint64_t select(char c, uint64_t idx);
 
 private:
     std::string indexPrefix;
     uint64_t seqLen{0};
     uint32_t charLen{0};
     std::map<char, uint64_t> chars;
+    std::vector<char> inverseChars;
     compact::vector<uint64_t, 1> *wv;
     std::vector<uint64_t> spos;
+    std::vector<uint64_t> srank;
     bool construct(std::string &fileName);
     void insertIntoWVRecursively(uint64_t c, uint64_t level);
+    bool loadWVTree(std::string &prefix);
+    Rank_support *r;
+    Select_support *s;
 };
 
 

@@ -12,29 +12,56 @@
 
 WaveletTree::WaveletTree(std::string &inputFile, bool loadIndex) {
     if (loadIndex) {
-        std::cout << "loading the index from " + inputFile + "..\n";
-        std::ifstream idxInfo(inputFile + "/" + BVOperators::idxInfoFileName,
-                              std::ios::binary | std::ios::in);
-        idxInfo.read(reinterpret_cast<char*>(&seqLen), sizeof(seqLen));
-        uint32_t charCnt{0};
-        idxInfo.read(reinterpret_cast<char*>(&charCnt), sizeof(charCnt));
-        for (uint32_t i = 0; i < charCnt; i++) {
-            char c;
-            idxInfo.read(&c, sizeof(c));
-            chars[c] = i;
-        }
-        charLen = static_cast<uint32_t >(std::ceil(std::log2(charCnt)));
-        idxInfo.close();
-        std::string fileName = inputFile + "/" + BVOperators::wvIdxFileName;
-        wv = new compact::vector<uint64_t, 1>(10);
-        wv->deserialize(fileName, false);
-    }
-    else {
+        loadWVTree(inputFile);
+    } else {
         initializingWVTree(inputFile);
         wv = new compact::vector<uint64_t, 1>(static_cast<uint64_t >(std::ceil(std::log2(chars.size())) * seqLen));
         wv->clear_mem();
         construct(inputFile);
     }
+}
+
+bool WaveletTree::loadWVTree(std::string &prefix) {
+    std::cout << "loading the index from " + prefix + "..\n";
+    std::ifstream idxInfo(prefix + "/" + BVOperators::idxInfoFileName,
+                          std::ios::binary | std::ios::in);
+    idxInfo.read(reinterpret_cast<char*>(&seqLen), sizeof(seqLen));
+    uint32_t charCnt{0};
+    idxInfo.read(reinterpret_cast<char*>(&charCnt), sizeof(charCnt));
+    inverseChars.resize(charCnt);
+    for (uint32_t i = 0; i < charCnt; i++) {
+        char c;
+        idxInfo.read(&c, sizeof(c));
+        chars[c] = i;
+        inverseChars[i] = c;
+    }
+    charLen = static_cast<uint32_t >(std::ceil(std::log2(charCnt)));
+    idxInfo.close();
+    std::cerr << "seqLen=" << seqLen << " , charCnt=" << charCnt << " , charBits=" << charLen << "\n";
+    std::string fileName = prefix + "/" + BVOperators::wvIdxFileName;
+    wv = new compact::vector<uint64_t, 1>(10);
+    wv->deserialize(fileName, false);
+    r = new Rank_support(*wv);
+    s = new Select_support(*r);
+
+
+    // construct the sPos and sRank vectors
+    srank.resize(static_cast<uint64_t >(pow(2, charLen) - 1));
+    spos.resize(srank.size());
+    std::cerr << "seqLen=" << seqLen << " , srank.size()=" << srank.size() << "\n";
+    spos[1] = seqLen;
+    srank[1] = r->rank1(spos[1]-1);
+    for (uint64_t i = 2; i < srank.size(); i++) {
+        uint64_t par = (i-1)/2;
+        spos[i] = spos[par] + seqLen;
+        if (i % 2  == 0) {
+            spos[i] += (spos[par+1]-srank[par+1])-(spos[par]-srank[par]);
+        }
+//        std::cerr << i << " " << spos[i] << "\n";
+        srank[i] = r->rank1(spos[i]-1);
+    }
+    std::cerr << "Index loaded successfully.\n";
+    return true;
 }
 
 bool WaveletTree::initializingWVTree(std::string &fileName) {
@@ -89,7 +116,7 @@ bool WaveletTree::initializingWVTree(std::string &fileName) {
     uint64_t s{0}, len{0};
     for (auto l = 0; l < log2(spos.size()); l++) {
         s = s + len;
-        uint64_t prevCnt=0, currCnt = spos[s];
+        uint64_t prevCnt=l*seqLen, currCnt = spos[s];
         len = (uint64_t)std::pow(2, l);
         for (auto i = s; i < s + len; i++) {
             spos[i] = prevCnt;
@@ -135,7 +162,7 @@ void WaveletTree::insertIntoWVRecursively(uint64_t c, uint64_t level) {
     auto rowStartIdx = static_cast<uint64_t >(std::pow(2, level))-1;
     auto bucket = c >> (charLen - level);
     auto idx = rowStartIdx + bucket;
-    (*wv)[level*seqLen + spos[idx]] = c >> (charLen - level - 1) & 1;
+    (*wv)[spos[idx]] = c >> (charLen - level - 1) & 1;
     spos[idx]++;
     if (level+1 == charLen) return;
     insertIntoWVRecursively(c, level+1);
@@ -169,9 +196,52 @@ bool WaveletTree::serialize(std::string &prefix) {
     return true;
 }
 
-void WaveletTree::access(uint64_t idx) {}
-void WaveletTree::rank(char c, uint64_t idx) {}
-void WaveletTree::select(char c, uint64_t idx) {}
+char WaveletTree::access(uint64_t idx) {
+    uint64_t charId = 0;
+    uint64_t blockStart = 0;
+    uint64_t offset = idx;
+    for (uint64_t level = 0; level < charLen; level++) {
+        auto blockIdx = static_cast<uint64_t >(std::pow(2, level)-1+charId);
+        blockStart = spos[blockIdx];
+        auto vIdx = blockStart+offset;
+        uint16_t v = (*wv)[vIdx];
+        charId = (charId << 1) | v;
+        if (v) {
+            offset = r->rank1(vIdx) - srank[blockIdx];
+        } else {
+            offset = (vIdx + 1 - r->rank1(vIdx)) - (blockStart - srank[blockIdx]);
+        }
+    }
+    return inverseChars[charId];
+}
+
+uint64_t WaveletTree::rank(char c, uint64_t idx) {
+    uint64_t charId = 0;
+    uint64_t blockStart = 0;
+    uint64_t rnk = idx;
+    for (uint64_t level = 0; level < charLen; level++) {
+        auto blockIdx = static_cast<uint64_t >(std::pow(2, level)-1+charId);
+        blockStart = spos[blockIdx];
+        auto vIdx = level*seqLen+blockStart+rnk;
+        uint16_t v = (*wv)[vIdx];
+        charId = (charId << 1) | v;
+        if (v) {
+            rnk = r->rank1(vIdx) - srank[blockIdx];
+        } else {
+            rnk = vIdx + 1 - r->rank1(vIdx) - (blockIdx + 1 - srank[blockIdx]);
+        }
+    }
+    return rnk;
+}
+
+uint64_t WaveletTree::select(char c, uint64_t idx) {
+    return wv->size();
+}
+
+
+
+
+
 
 int constructWaveletTree(Opts &opts) {
     WaveletTree wv(opts.inputFile);
@@ -179,4 +249,32 @@ int constructWaveletTree(Opts &opts) {
     WaveletTree wv2(opts.prefix, true);
     opts.prefix = "console";
     wv2.serialize(opts.prefix);
+}
+
+int operateOnWaveletTree(Opts &opts) {
+    WaveletTree wv(opts.prefix, true);
+    std::string console = "console";
+    wv.serialize(console);
+    std::ifstream query(opts.inputFile, std::ios::in);
+    uint64_t idx;
+    char c;
+    if (opts.operation == Operation::acc) {
+        std::cout << "Results of ACCESS operation:\n";
+        while (query.good()) {
+            query >> idx;
+            std::cout << idx << ":" << wv.access(idx) << "\n";
+        }
+    } else if (opts.operation == Operation::rnk) {
+        std::cout << "Results of RANK operation:\n";
+        while (query.good()) {
+            query >> c >> idx;
+            std::cout << idx << ":" << wv.rank(c, idx) << "\n";
+        }
+    } else if (opts.operation == Operation::sel) {
+        std::cout << "Results of SELECT operation:\n";
+        while (query.good()) {
+            query >> c >> idx;
+            std::cout << idx << ":" << wv.select(c, idx) << "\n";
+        }
+    }
 }
