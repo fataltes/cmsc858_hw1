@@ -10,14 +10,6 @@ target_include_directories(bvOperators_core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOU
 target_compile_options(bvOperators_core PUBLIC "$<$<AND:$<CONFIG:DEBUG>,$<COMPILE_LANGUAGE:CXX>>:${BVOPERATORS_DEBUG_CXXFLAGS}>")
 target_compile_options(bvOperators_core PUBLIC "$<$<AND:$<CONFIG:RELEASE>,$<COMPILE_LANGUAGE:CXX>>:${BVOPERATORS_RELEASE_CXXFLAGS}>")
 
-#[[
-target_link_libraries(bvOperators_core
-        Threads::Threads
-        m
-        z
-        rt)
-]]
-
 add_executable(bvOperators BVOperator.cpp)
 target_include_directories(bvOperators PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
 target_link_libraries(bvOperators bvOperators_core)
