@@ -1,7 +1,5 @@
-CMSC858o --- HW1 --- Succinct Data Structures and Operations
+Succinct Data Structures and Operations
 ========================================
-
-*Fatemeh Almodaresi , SID:<117000986>*
 
 # Introduction
 Succinct operations, specifically rank and select over bit-vectors are important in helping with time and space efficiency 
