@@ -332,14 +332,14 @@ int operateOnWaveletTree(Opts &opts) {
     uint64_t idx;
     char c;
     if (opts.operation == Operation::acc) {
-        std::cout << "\n\nResults of ACCESS operation:\n";
+        std::cout << "\n\n\nResults of ACCESS operation:\n\n";
         while (query.good()) {
             query >> idx;
             if (query.good())
                 std::cout << idx << ":" << wv.access(idx) << "\n";
         }
     } else if (opts.operation == Operation::rnk) {
-        std::cout << "\n\nResults of RANK operation:\n";
+        std::cout << "\n\n\nResults of RANK operation:\n\n";
         while (query.good()) {
             query >> c >> idx;
             if (query.good()) {
