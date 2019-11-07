@@ -7,16 +7,19 @@
 #include <waveletTree.h>
 #include <cmath>
 #include <compact_vector/compact_vector.hpp>
+#include <chrono>
 
 #include "waveletTree.h"
 
-WaveletTree::WaveletTree(std::string &inputFile, bool loadIndex) {
+WaveletTree::WaveletTree(std::string &inputFile, bool loadIndex): wv(0) {
     if (loadIndex) {
         loadIdx(inputFile);
     } else {
         initializeWVTree(inputFile);
-        wv = new compact::vector<uint64_t, 1>(static_cast<uint64_t >(std::ceil(std::log2(chars.size())) * seqLen));
-        wv->clear_mem();
+        wv.resize(static_cast<uint64_t >(std::ceil(std::log2(chars.size())) * seqLen));
+        wv.clear_mem();
+        std::cerr << "Initializing a bitvector of size " << std::ceil(std::log2(chars.size())) << " * " << seqLen <<
+                  " which is " << wv.size() << "\n";
         construct(inputFile);
     }
 }
@@ -39,36 +42,19 @@ bool WaveletTree::loadIdx(std::string &prefix) {
     idxInfo.close();
     std::cerr << "seqLen=" << seqLen << " , charCnt=" << charCnt << " , charBits=" << charLen << "\n";
     std::string fileName = prefix + "/" + BVOperators::wvIdxFileName;
-    wv = new compact::vector<uint64_t, 1>(0);
-    wv->deserialize(fileName, false);
-    r = new Rank_support(*wv);
-    s = new Select_support(*r);
-
-
-    // construct the sPos and sRank vectors
-    srank.resize(static_cast<uint64_t >(pow(2, charLen) - 1));
-    spos.resize(srank.size());
-    std::cerr << "seqLen=" << seqLen << " , srank.size()=" << srank.size() << "\n";
-    spos[1] = seqLen;
-    srank[1] = r->rank1(spos[1]-1);
-    for (uint64_t i = 2; i < srank.size(); i++) {
-        uint64_t par = (i-1)/2;
-        spos[i] = spos[par] + seqLen;
-        if (i % 2  == 0) {
-            spos[i] += (spos[par+1]-srank[par+1])-(spos[par]-srank[par]);
-        }
-        srank[i] = r->rank1(spos[i]-1);
-    }
+    wv.deserialize(fileName, false);
+    constructRankSupport();
     std::cerr << "Index loaded successfully.\n";
     return true;
 }
 
 bool WaveletTree::initializeWVTree(std::string &fileName) {
+    std::cerr << "constructing wv from file " << fileName << "\n";
     uint64_t bufferSize = 100000;
     std::vector<char> buffer(bufferSize, 0);
     std::ifstream in( fileName, std::ios::binary | std::ios::ate);
     auto fileLen = in.tellg();
-    if (!fileLen)  {
+    if (fileLen <= 0)  {
         std::cerr << "ERROR! Sequence file is either empty or corrupted.\n";
         std::exit(3);
     }
@@ -100,7 +86,7 @@ bool WaveletTree::initializeWVTree(std::string &fileName) {
 
     charLen = static_cast<uint32_t >(std::ceil(std::log2(chars.size())));
     std::cerr << "charCnt=" << chars.size() << " , charBits=" << charLen << "\n";
-    spos.resize(static_cast<uint64_t >(pow(2, charLen+1) - 1));
+    spos.resize(static_cast<uint64_t >(pow(2, charLen+1) - 1), 0);
     std::cerr << "spos.size()=" << spos.size() << "\n";
     auto lowestLevelStart = static_cast<uint64_t >(spos.size()-pow(2, charLen));
     uint64_t idx{0};
@@ -113,12 +99,18 @@ bool WaveletTree::initializeWVTree(std::string &fileName) {
     for (int64_t i = lowestLevelStart - 1; i >= 0; i--) {
         spos[i] = spos[2*i+1] + spos[2*i+2];
     }
-    uint64_t s{0}, len{0};
+    uint64_t s{0}, len{0}, prevCnt{0}, currCnt;
     for (auto l = 0; l < log2(spos.size()); l++) {
         s = s + len;
-        uint64_t prevCnt=l*seqLen, currCnt = spos[s];
+        if (s >= spos.size()) {
+            spos[spos.size()-1] = prevCnt;
+            break;
+        }
+        prevCnt = l*seqLen;
+        currCnt = spos[s];
         len = (uint64_t)std::pow(2, l);
-        for (auto i = s; i < s + len; i++) {
+        uint64_t i;
+        for (i = s; i < s + len and i < spos.size()-1; i++) {
             spos[i] = prevCnt;
             prevCnt += currCnt;
             currCnt = spos[i + 1];
@@ -156,7 +148,18 @@ void WaveletTree::insertIntoWVRecursively(uint64_t c, uint64_t level) {
     auto rowStartIdx = static_cast<uint64_t >(std::pow(2, level))-1;
     auto bucket = c >> (charLen - level);
     auto idx = rowStartIdx + bucket;
-    (*wv)[spos[idx]] = c >> (charLen - level - 1) & 1;
+    /*if (idx >= spos.size()) {
+        std::cerr << "ERROR!! idx >= spos.size() " << idx << ">=" << spos.size() <<
+        " rowStartIdx=" << rowStartIdx << " bucket=" << bucket << " level=" << level << " char=" << c << "\n";
+        std::exit(3);
+    }
+    if (spos[idx] >= wv.size()) {
+        std::cerr << "ERROR!! spos[idx] >= wv.size() " << spos[idx] << ">=" << wv.size() <<
+                    " idx=" << idx <<
+                  " rowStartIdx=" << rowStartIdx << " bucket=" << bucket << " level=" << level << " char=" << c << "\n";
+        std::exit(3);
+    }*/
+    wv[spos[idx]] = c >> (charLen - level - 1) & 1;
     spos[idx]++;
     if (level+1 == charLen) return;
     insertIntoWVRecursively(c, level+1);
@@ -167,7 +170,7 @@ bool WaveletTree::serialize(std::string &prefix) {
         std::cout << "writing the wv to console\n";
         for (auto c = 0; c < charLen; c++) {
             for (auto i = 0; i < seqLen; i++) {
-                std::cout << ((*wv)[c*seqLen+i]? "1 ":"0 ");
+                std::cout << (wv[c*seqLen+i]? "1 ":"0 ");
             }
             std::cout << "\n";
         }
@@ -184,7 +187,7 @@ bool WaveletTree::serialize(std::string &prefix) {
         idxInfo.close();
         std::ofstream wvIdx(prefix + "/" + BVOperators::wvIdxFileName,
                 std::ios::binary | std::ios::out);
-        wv->serialize(wvIdx);
+        wv.serialize(wvIdx);
         wvIdx.close();
     }
     return true;
@@ -201,7 +204,7 @@ char WaveletTree::access(uint64_t idx) {
     uint64_t offset = idx, vIdx{blockStart+offset}, v{};
     for (uint64_t level = 0; level < charLen; level++) {
         // load value at current level
-        v = (*wv)[vIdx];
+        v = wv[vIdx];
         charId = (charId << 1) | v;
         //find the next level index
         if (v) {
@@ -298,6 +301,33 @@ int64_t WaveletTree::select(char c, uint64_t idx) {
    return idx-1;
 }
 
+bool WaveletTree::constructRankSupport() {
+    r = new Rank_support(wv);
+    s = new Select_support(*r);
+    // construct the sPos and sRank vectors
+    srank.clear();
+    srank.resize(static_cast<uint64_t >(pow(2, charLen) - 1));
+    spos.clear();
+    spos.resize(srank.size());
+    std::cerr << "seqLen=" << seqLen << " , srank.size()=" << srank.size() << "\n";
+    spos[1] = seqLen;
+    srank[1] = r->rank1(spos[1]-1);
+    for (uint64_t i = 2; i < srank.size(); i++) {
+        uint64_t par = (i-1)/2;
+        spos[i] = spos[par] + seqLen;
+        if (i % 2  == 0) {
+            spos[i] += (spos[par+1]-srank[par+1])-(spos[par]-srank[par]);
+        }
+        srank[i] = r->rank1(spos[i]-1);
+    }
+    return true;
+}
+
+WaveletTree::~WaveletTree() {
+    delete s;
+    delete r;
+}
+
 
 
 /***
@@ -363,4 +393,98 @@ int operateOnWaveletTree(Opts &opts) {
             }
         }
     }
+}
+
+
+int benchmarkWVRankSelect(Opts &opts) {
+
+    std::ofstream wvout(opts.prefix + "/wv_files_variousSize/wvRankSelect.stat");
+    wvout << "file_size\tsize_in_bytes\tconstruction_time\tavg_rank_time\tavg_select_time\n";
+    for (uint64_t i=1000; i < 1000000; i+=100000) {
+        std::cerr << "\r" << i;
+        auto start = std::chrono::high_resolution_clock::now();
+        std::string filename = opts.prefix + "/wv_files_variousSize/" + std::to_string(i) + "_50chars";
+        WaveletTree wv(filename);
+        wv.constructRankSupport();
+        auto finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> constructionDuration = finish - start;
+        double constructionTime = constructionDuration.count();
+        auto size_bytes = wv.size();
+
+        uint64_t cntr;
+        start = std::chrono::high_resolution_clock::now();
+        cntr = 0;
+        for (auto &kv : wv.chars) {
+            char c = kv.first;
+            auto jump = wv.size()/10;
+            for (uint64_t idx = 1; idx < wv.size(); idx+=jump) {
+                wv.rank(c, idx);
+                cntr++;
+            }
+        }
+        finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> rankDuration = finish - start;
+        double rankTime = rankDuration.count() / cntr;
+        start = std::chrono::high_resolution_clock::now();
+        cntr = 0;
+        for (auto &kv : wv.chars) {
+            char c = kv.first;
+            for (uint64_t idx = 1; idx < 100; idx+=10) {
+                wv.select(c, idx);
+                cntr++;
+            }
+        }
+        finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> selectDuration = finish - start;
+        double selectTime = selectDuration.count() / cntr;
+        wvout << i << "\t" << size_bytes << "\t" << constructionTime << "\t" << rankTime << "\t" << selectTime << "\n";
+    }
+    wvout.close();
+    std::cerr << "\n";
+
+
+    std::ofstream wvout2(opts.prefix + "/wv_files/wvRankSelect.stat");
+    wvout2 << "alphabet_size\tsize_in_bytes\tconstruction_time\tavg_rank_time\tavg_select_time\n";
+    for (uint64_t i = 2; i < 33; i++) {
+        std::cerr << "\r" << i;
+        auto start = std::chrono::high_resolution_clock::now();
+        std::string filename = opts.prefix + "/wv_files/" + std::to_string(i);
+        WaveletTree wv(filename);
+        wv.constructRankSupport();
+        auto finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> constructionDuration = finish - start;
+        double constructionTime = constructionDuration.count();
+        auto size_bytes = wv.size();
+
+        uint64_t cntr;
+        start = std::chrono::high_resolution_clock::now();
+        cntr = 0;
+        for (auto &kv : wv.chars) {
+            char c = kv.first;
+            auto jump = wv.size()/10;
+            for (uint64_t idx = 1; idx < wv.size(); idx+=jump) {
+                wv.rank(c, idx);
+                cntr++;
+            }
+        }
+        finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> rankDuration = finish - start;
+        double rankTime = rankDuration.count() / cntr;
+        start = std::chrono::high_resolution_clock::now();
+        cntr = 0;
+        for (auto &kv : wv.chars) {
+            char c = kv.first;
+            for (uint64_t idx = 1; idx < 100; idx+=10) {
+                wv.select(c, idx);
+                cntr++;
+            }
+        }
+        finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> selectDuration = finish - start;
+        double selectTime = selectDuration.count() / cntr;
+        wvout2 << i << "\t" << size_bytes << "\t" << constructionTime << "\t" << rankTime << "\t" << selectTime << "\n";
+    }
+    wvout2.close();
+    std::cerr << "\n";
+    return EXIT_SUCCESS;
 }

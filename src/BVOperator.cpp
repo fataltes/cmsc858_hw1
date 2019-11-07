@@ -17,6 +17,7 @@ int benchmarkRank(Opts &opts);
 int benchmarkSelect(Opts &opts);
 int constructWaveletTree(Opts &opts);
 int operateOnWaveletTree(Opts &opts);
+int benchmarkWVRankSelect(Opts &opts);
 
 int main(int argc, char* argv[])  {
     (void) argc;
@@ -29,7 +30,7 @@ int main(int argc, char* argv[])  {
     // Rank Mode, prepare the rank performance distribution over bv size
     auto reportMode = (
             command("report").set(selected, mode::report),
-                    (option("-t", "--type") & value("OptType", type)) % "options:(rank, select), default:rank",
+                    (option("-t", "--type") & value("OptType", type)) % "options:(rank, select, wv_csr), default:rank",
                     (option("-p", "--report_prefix") & value("reportPrefix", opts.prefix)) % "The directory to store the report files (default:cout in console)",
                     (option("-s", "--startSize") & value("minBVSize", opts.minBVSize)) % "The bv size to start benchmarking with (default:10,000)",
                     (option("-e", "--endSize") & value("maxBVSize", opts.maxBVSize)) % "The max bv size to benchmark (default:1,000,000)",
@@ -80,8 +81,10 @@ int main(int argc, char* argv[])  {
                     benchmarkRank(opts); std::cerr << "Done\n"; break;
                 } else if (type == "select") {
                     benchmarkSelect(opts);  break;
+                } else if (type == "wv_csr") {
+                    benchmarkWVRankSelect(opts); break;
                 } else {
-                    std::cerr << "ERROR! Unrecognized type of report. Options are only (rank, select).\n";
+                    std::cerr << "ERROR! Unrecognized type of report. Options are only (rank, select, wv_csr).\n";
                     std::exit(3);
                 }
             case mode::wv_construct:

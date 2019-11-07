@@ -82,7 +82,8 @@ uint64_t Rank_support::rank1(uint64_t i) {
     uint64_t val = 0;
     if (i >= cvec.size()) {
         std::cerr << "ERROR! Index requested is out of range. Index: " << i << " bitvector size: " << cvec.size() << "\n";
-        std::exit(5);
+        return BVOperators::INVALID;
+//        std::exit(5);
     }
     uint64_t RsIdx = i/s;
     uint64_t RbIdx = RsIdx*blocksPerSuperBlock + (i%s)/b;

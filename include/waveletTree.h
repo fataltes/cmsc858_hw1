@@ -12,7 +12,11 @@
 class WaveletTree {
 
 public:
+    std::map<char, uint64_t> chars;
+
     explicit WaveletTree(std::string &inputFile, bool loadIndex=false);
+
+    virtual ~WaveletTree();
 
     bool initializeWVTree(std::string &fileName);
     bool serialize(std::string &prefix);
@@ -21,13 +25,18 @@ public:
     int64_t rank(char c, uint64_t idx);
     int64_t select(char c, uint64_t idx);
 
+    uint64_t size() {
+        return wv.bytes();
+    }
+
+    bool constructRankSupport();
+
 private:
     std::string indexPrefix;
     uint64_t seqLen{0};
     uint32_t charLen{0};
-    std::map<char, uint64_t> chars;
     std::vector<char> inverseChars;
-    compact::vector<uint64_t, 1> *wv;
+    compact::vector<uint64_t, 1> wv;
     std::vector<uint64_t> spos;
     std::vector<uint64_t> srank;
     bool construct(std::string &fileName);
