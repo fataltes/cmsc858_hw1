@@ -68,7 +68,10 @@ bool WaveletTree::initializeWVTree(std::string &fileName) {
     std::vector<char> buffer(bufferSize, 0);
     std::ifstream in( fileName, std::ios::binary | std::ios::ate);
     auto fileLen = in.tellg();
-    if (!fileLen) return false;
+    if (!fileLen)  {
+        std::cerr << "ERROR! Sequence file is either empty or corrupted.\n";
+        std::exit(3);
+    }
     seqLen = static_cast<uint64_t >(fileLen)-1;
     std::cerr << "seqLen = " << seqLen << "\n";
     in.seekg(0);
@@ -107,7 +110,7 @@ bool WaveletTree::initializeWVTree(std::string &fileName) {
     }
     // we're done with reading the file at this point
 
-    for (int i = lowestLevelStart - 1; i >= 0; i--) {
+    for (int64_t i = lowestLevelStart - 1; i >= 0; i--) {
         spos[i] = spos[2*i+1] + spos[2*i+2];
     }
     uint64_t s{0}, len{0};
@@ -187,6 +190,11 @@ bool WaveletTree::serialize(std::string &prefix) {
     return true;
 }
 
+/**
+ *
+ * @param idx between 0 and n, length of the original sequence (inclusive)
+ * @return the character at index idx
+ */
 char WaveletTree::access(uint64_t idx) {
     uint64_t charId = 0;
     uint64_t blockIdx{0}, blockStart{0};
@@ -209,6 +217,13 @@ char WaveletTree::access(uint64_t idx) {
     return inverseChars[charId];
 }
 
+/**
+ * A Top to Bottom bit-rank call over the levels of the tree
+ *
+ * @param c a character in the alphabet defined for wavelet tree
+ * @param idx between 0 and n, length of the sequence that wavelet tree was constructed over (both inclusive)
+ * @return the rank of character c up to and including position idx
+ */
 int64_t WaveletTree::rank(char c, uint64_t idx) {
     if (chars.find(c) == chars.end()) {
         std::cerr << "Character " << c << " invalid. skipping.\n";
@@ -234,6 +249,14 @@ int64_t WaveletTree::rank(char c, uint64_t idx) {
     return offset+1;
 }
 
+/**
+ * A Bottom to Top bit-select call over the levels of the tree
+ *
+ * @param c a character in the alphabet defined for wavelet tree
+ * @param idx greater than 1 and less than the length of the sequence
+ * @return INVALID (-1) if total number of occurrences of the character c is less than idx
+ * returns the index i of the sequence that character c has occurred idx times up to and including that
+ */
 int64_t WaveletTree::select(char c, uint64_t idx) {
     if (chars.find(c) == chars.end()) {
         std::cerr << "Character " << c << " invalid. skipping.\n";
@@ -266,9 +289,12 @@ int64_t WaveletTree::select(char c, uint64_t idx) {
 
 
 
-
-
-
+/***
+ * Main functions that will be called from the main main!
+ *
+ * @param opts
+ * @return
+ */
 int constructWaveletTree(Opts &opts) {
     WaveletTree wv(opts.inputFile);
     wv.serialize(opts.prefix);
