@@ -39,6 +39,7 @@ int64_t Select_support::recursiveSelect(uint64_t s, uint64_t e, uint64_t g) {
         return BVOperators::INVALID;
     }
     auto rank = r(m);
+//    std::cerr << " \n -- " << s << " " << e << " " << m << " " << rank << " " << g << "";
     if (rank == g) {
         return r.getSetIdxLessEqual(m, 1);
     } else if (rank > g) {

@@ -40,7 +40,11 @@ void Rank_support::construct() {
     Rb.set_m_bits(bWidth);
     Rb.resize(static_cast<uint64_t>(Rs.size()*blocksPerSuperBlock));
     Rb.clear_mem();
-    auto pWidth = static_cast<uint32_t >(std::ceil(std::log2(b)));
+    // this b+1 was fucking tricky!!!!
+    // In this special case the value you put in each cell could actually be EXACTLY EQUAL to b
+    // So here we don't want to represent b numbers but present numbers from 0 to fucking b inclusive
+    // In cases b is a power of 2 for that one last value b we need log2(b+1) bits!!! rather than log2(b) bits
+    auto pWidth = static_cast<uint32_t >(std::ceil(std::log2(b+1)));
     Rp.set_m_bits(pWidth);
     Rp.resize(static_cast<uint64_t>(std::pow(2, b) * b));
     Rp.clear_mem();
@@ -93,6 +97,9 @@ uint64_t Rank_support::rank1(uint64_t i) {
         std::exit(3);
     }
     val = Rs[RsIdx] + Rb[RbIdx] + Rp[RpIdx];
+//    std::cerr << "\nRs=" << RsIdx << " " << Rs[RsIdx] << " Rb=" << RbIdx << " " << Rb[RbIdx]
+//    << " Rp=" << RpIdx << " " << Rp[RpIdx] << " (i%s)/b=" << (i%s)/b << " (i%s)%b=" << (i%s)%b <<
+//    " ptype=" << pType << "\n";
     return val;
 }
 
