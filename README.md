@@ -41,10 +41,6 @@ The following are the average time required per rank query for various sizes of 
 where *1/10*th of each bit-vector bits are set and also the overhead size of the rank data structure for each sample.
 
 
-plots go here
-
-
-
 The most difficult section in this task was undoubtedly handling R_p indices and later finding the appropriate index
 for each bit-vector of R_s, R_b, and R_p based on the input requested value.
 
@@ -68,10 +64,6 @@ The most challenging part for me was how to prevent code chunk repetition by bes
 etc.
 
 Same plots as task one have been provided for this task as well.
-
-
-plots go here
-
 
 
 You can run the command for this report as following:
@@ -118,9 +110,9 @@ It was challenging because unlike rank that narrows as we go down the levels of 
 and makes it possible to walk the tree top-down, in select, we need to start from the lowest level
 which is actually the level that each character belongs to a single block and then walk up the tree.
 
-Here are the plots showing the scalability of the data structure with respect to the bit-vector size
-and ....
-
+p.s.: For implementing the select over the wavelet tree, this thesis!!! helped me a lot:
+      http://www.cs.au.dk/~gerth/advising/thesis/jan-hessellund-knudsen-roland-larsen-pedersen.pdf
+      
 
 Since I am putting all of these as one executable, the commands interfaces are a little bit
 different from what the professor has specifically asked but they answer the same queries and
@@ -142,6 +134,9 @@ in addition to specifying the type of the query.[^ps]
 ```
 
 
+For seeing some plots and benchmarks on operation time
+and the operational DS size over different bv sizes
+you can check this notebook out --> *https://github.com/fataltes/quickNBs/blob/master/courses2019/cmsc858o_Hw1.ipynb* 
 
 ---------------
 [^ps]: P.S. Although I tried to catch a couple special cases with an invalid input
