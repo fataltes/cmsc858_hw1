@@ -226,7 +226,7 @@ char WaveletTree::access(uint64_t idx) {
  */
 int64_t WaveletTree::rank(char c, uint64_t idx) {
     if (chars.find(c) == chars.end()) {
-        std::cerr << "Character " << c << " invalid. skipping.\n";
+        std::cerr << "Character " << c << " invalid. skipping...\n";
         return BVOperators::INVALID;
     }
     uint64_t charId = chars[c];
@@ -246,7 +246,7 @@ int64_t WaveletTree::rank(char c, uint64_t idx) {
         vIdx = blockStart+offset;
 
     }
-    return offset+1;
+    return offset+1; // offset is 0-based but rank should give the count and should be 1-based
 }
 
 /**
@@ -273,6 +273,7 @@ int64_t WaveletTree::select(char c, uint64_t idx) {
         uint64_t lastBit = rIdx & 1;
         auto blockIdx = static_cast<uint64_t >(std::pow(2, level)-1 + (rIdx >> 1));
         auto start = spos[blockIdx];
+        // if there is no next block, then end is end of the wvt bitvector
         auto end = blockIdx+1 == spos.size()? r->getBvSize() : spos[blockIdx+1];
         if (lastBit) {
             childPos = s->recursiveSelect(start, end, idx + srank[blockIdx]);
@@ -282,7 +283,7 @@ int64_t WaveletTree::select(char c, uint64_t idx) {
         if (childPos == BVOperators::INVALID) {
             return BVOperators::INVALID;
         }
-        idx = childPos - spos[blockIdx] + 1;
+        idx = childPos - spos[blockIdx] + 1; // +1 is for converting the index to count ("i"th 1/0 to ("i"+1) 1s/0s)
     }
    return idx;
 }
@@ -291,6 +292,10 @@ int64_t WaveletTree::select(char c, uint64_t idx) {
 
 /***
  * Main functions that will be called from the main main!
+ */
+
+/**
+ * Constructs The wavelet tree
  *
  * @param opts
  * @return
@@ -303,6 +308,12 @@ int constructWaveletTree(Opts &opts) {
     wv2.serialize(opts.prefix);
 }
 
+/**
+ * Operates select, rank, or access of the queries in the input file over the wavelet tree index
+ *
+ * @param opts
+ * @return
+ */
 int operateOnWaveletTree(Opts &opts) {
     WaveletTree wv(opts.prefix, true);
     std::string console = "console";
